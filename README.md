@@ -1,37 +1,44 @@
 # CourseMatch
 
-#### 介绍
-课程项目选题、组队与审批系统
+> 软件工程课程项目：学生选题系统
 
-#### 软件架构
-软件架构说明
+CourseMatch 是一个面向课程项目的选题、志愿填报与结果公示系统。它的目标是让题库维护、学生选题、名额限制和分配过程更公开、更清楚，减少“想选的题目已被抢走、为什么这样分配”的沟通成本。
 
+## 当前状态
 
-#### 安装教程
+项目处于第一周立项阶段。当前已建立仓库与协作规范；团队名单、会议记录、思维导图和 NABCD 分析将在 Gitee Wiki 中留存。
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+## 第一版范围
 
-#### 使用说明
+- 教师发布和维护课程题目；
+- 学生浏览、筛选并填报志愿；
+- 系统检查题目名额和重复申请；
+- 教师查看申请并确认分配；
+- 学生查看自己的结果和公开的选题进度。
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+第一版不做移动端 App、支付、完整教学管理系统或复杂 AI 自动决策。
 
-#### 参与贡献
+## 协作入口
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+- [项目任务契约](docs/PROJECT_CONTRACT.md)
+- [团队协作规则](docs/COLLABORATION.md)
+- [AI 协作规则](AGENTS.md)
+- Gitee Wiki：课程立项、原型、进度计划、测试和用户反馈的过程证据。
 
+## 开发约定
 
-#### 特技
+1. `master` 始终保持可运行、可演示；不直接向 `master` 推送。
+2. 每个 Issue 从 `master` 新建独立分支，完成后通过 Pull Request 合并。
+3. 先读取 `AGENTS.md`、项目契约和协作规则，再开始修改代码或文档。
+4. 技术栈尚未冻结；第二周需求分析完成后再补充本地启动与测试命令。
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+## 本地初始化
+
+```bash
+git clone https://gitee.com/SilenVale/coursematch.git
+cd coursematch
+git switch master
+git pull --ff-only
+```
+
+后续根据确定的技术栈补充安装、启动和测试命令。
