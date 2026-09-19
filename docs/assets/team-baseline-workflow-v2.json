@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "CourseMatch 团队共同业务基线",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1119, 652]
+  },
+  "lanes": [
+    { "id": "teacher", "label": "教师" },
+    { "id": "student", "label": "学生" },
+    { "id": "system", "label": "系统" },
+    { "id": "result", "label": "结果与补选" }
+  ],
+  "phases": [
+    { "id": "setup", "label": "配置与公开", "fromCol": 0, "toCol": 1 },
+    { "id": "submit", "label": "填报", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "allocate", "label": "冻结与分配", "fromCol": 3, "toCol": 4, "variant": "security" },
+    { "id": "close", "label": "结果与补选", "fromCol": 5, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["setupActivity", "publishRules", "submitPreferences", "freezeSnapshot", "roundAllocation", "showResult"],
+  "semanticChecks": {
+    "allowedRoots": ["setupActivity"],
+    "allowedTerminals": ["showResult", "supplementary"],
+    "requiredPaths": [
+      { "from": "setupActivity", "to": "showResult" },
+      { "from": "roundAllocation", "to": "supplementary" }
+    ]
+  },
+  "nodes": [
+    { "id": "setupActivity", "lane": "teacher", "col": 0, "type": "frontend", "label": "创建活动", "sublabel": "名单、题目、名额、资格、截止时间", "width": 180 },
+    { "id": "publishRules", "lane": "teacher", "col": 1, "type": "frontend", "label": "公开规则并开放", "sublabel": "开放后核心规则不可改", "width": 170 },
+    { "id": "submitPreferences", "lane": "student", "col": 2, "type": "frontend", "label": "提交有序志愿", "sublabel": "1～3 个；截止前可修改", "width": 170 },
+    { "id": "freezeSnapshot", "lane": "system", "col": 3, "type": "database", "label": "截止并冻结快照", "sublabel": "题目、名额、志愿、随机序号", "width": 180 },
+    { "id": "roundAllocation", "lane": "system", "col": 4, "type": "backend", "label": "按轮次自动分配", "sublabel": "第一志愿优先；同轮按序号", "width": 180 },
+    { "id": "showResult", "lane": "result", "col": 5, "type": "frontend", "label": "展示可解释结果", "sublabel": "题目、轮次、序号、结果原因", "width": 180 },
+    { "id": "supplementary", "lane": "result", "col": 3, "type": "messagebus", "label": "待补选 / 异常调整", "sublabel": "仅剩余名额；必须留痕", "width": 180 }
+  ],
+  "edges": [
+    { "id": "setup-publish", "from": "setupActivity", "to": "publishRules", "label": "完整才可开放", "role": "main" },
+    { "id": "publish-submit", "from": "publishRules", "to": "submitPreferences", "label": "学生开始填报", "role": "main", "variant": "emphasis" },
+    { "id": "submit-freeze", "from": "submitPreferences", "to": "freezeSnapshot", "label": "截止时间到达", "role": "main", "variant": "security" },
+    { "id": "freeze-allocate", "from": "freezeSnapshot", "to": "roundAllocation", "label": "固定随机序号", "role": "main", "variant": "security" },
+    { "id": "allocate-result", "from": "roundAllocation", "to": "showResult", "label": "已分配学生", "role": "main", "variant": "emphasis" },
+    { "id": "allocate-supplement", "from": "roundAllocation", "to": "supplementary", "label": "全部志愿失败", "role": "branch", "variant": "dashed", "route": "drop" }
+  ]
+}
