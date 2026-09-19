@@ -10,7 +10,9 @@ CourseMatch 是一个帮助教师组织课程选题的 Web 系统。
 
 ## 2. 一张图看懂主流程
 
-打开 [团队共同业务基线图](./assets/team-baseline-workflow-v2.html) 查看可交互版本。
+![CourseMatch 团队共同业务基线图](./assets/team-baseline-workflow.png)
+
+上图为当前业务流程示意。需要本地查看可交互版本时，可下载 [HTML 流程图文件](./assets/team-baseline-workflow-v2.html)。
 
 ```text
 教师创建活动：名单、题目、名额、资格条件、截止时间
