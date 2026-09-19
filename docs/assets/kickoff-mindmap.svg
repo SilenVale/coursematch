@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">CourseMatch 学生选题系统思维导图</title>
+  <desc id="desc">展示问题、目标、教师端、学生端、公平分配规则与第一版边界。</desc>
+  <style>
+    .bg { fill: #fafafa; }
+    .title { font: 700 38px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #111; }
+    .branch { fill: #fff; stroke: #1d1d1d; stroke-width: 2.5; }
+    .root { fill: #1d1d1d; }
+    .rootText { font: 700 32px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #fff; }
+    .head { font: 700 24px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #111; }
+    .body { font: 20px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #333; }
+    .line { stroke: #1d1d1d; stroke-width: 3; fill: none; }
+    .dot { fill: #1d1d1d; }
+  </style>
+  <rect class="bg" width="1600" height="1000"/>
+  <text x="800" y="64" text-anchor="middle" class="title">CourseMatch 学生选题系统 思维导图</text>
+
+  <path class="line" d="M 665 450 C 570 450, 570 230, 480 230"/>
+  <path class="line" d="M 665 490 C 550 490, 550 470, 480 470"/>
+  <path class="line" d="M 935 450 C 1030 450, 1030 230, 1120 230"/>
+  <path class="line" d="M 935 490 C 1050 490, 1050 470, 1120 470"/>
+  <path class="line" d="M 800 550 C 800 660, 800 660, 800 720"/>
+  <circle class="dot" cx="480" cy="230" r="7"/><circle class="dot" cx="480" cy="470" r="7"/>
+  <circle class="dot" cx="1120" cy="230" r="7"/><circle class="dot" cx="1120" cy="470" r="7"/><circle class="dot" cx="800" cy="720" r="7"/>
+
+  <rect class="root" x="665" y="410" width="270" height="140" rx="16"/>
+  <text x="800" y="466" text-anchor="middle" class="rootText">CourseMatch</text>
+  <text x="800" y="510" text-anchor="middle" class="rootText">学生选题系统</text>
+
+  <rect class="branch" x="80" y="120" width="400" height="220" rx="14"/>
+  <text x="120" y="168" class="head">真实问题</text>
+  <text x="120" y="210" class="body">• 多人竞争有限题目</text>
+  <text x="120" y="246" class="body">• Excel、问卷、群聊难以复核</text>
+  <text x="120" y="282" class="body">• 结果易被质疑不公平</text>
+
+  <rect class="branch" x="80" y="380" width="400" height="250" rx="14"/>
+  <text x="120" y="428" class="head">目标与学生端</text>
+  <text x="120" y="470" class="body">• 规则公开、过程可复核、结果可解释</text>
+  <text x="120" y="506" class="body">• 浏览题目、计划名额与汇总热度</text>
+  <text x="120" y="542" class="body">• 提交 1 至 3 个有序志愿</text>
+  <text x="120" y="578" class="body">• 查看结果、原因与补选入口</text>
+
+  <rect class="branch" x="1120" y="120" width="400" height="220" rx="14"/>
+  <text x="1160" y="168" class="head">教师端</text>
+  <text x="1160" y="210" class="body">• 确认参与名单、题库与题目名额</text>
+  <text x="1160" y="246" class="body">• 公布资格条件、截止时间与规则</text>
+  <text x="1160" y="282" class="body">• 查看分配、补选与调整记录</text>
+
+  <rect class="branch" x="1120" y="380" width="400" height="250" rx="14"/>
+  <text x="1160" y="428" class="head">公平分配规则</text>
+  <text x="1160" y="470" class="body">• 截止后冻结名单、题目、名额、志愿</text>
+  <text x="1160" y="506" class="body">• 每名学生生成固定随机序号</text>
+  <text x="1160" y="542" class="body">• 先处理全体第一志愿，再处理下一轮</text>
+  <text x="1160" y="578" class="body">• 同题同轮超额时按随机序号决定</text>
+
+  <rect class="branch" x="500" y="720" width="600" height="210" rx="14"/>
+  <text x="540" y="770" class="head">第一版边界与补选</text>
+  <text x="540" y="812" class="body">• 每名学生最终最多分配一个题目；题目可设置可容纳人数</text>
+  <text x="540" y="848" class="body">• 所有已填志愿失败者进入补选；仅竞争剩余名额，沿用冻结序号</text>
+  <text x="540" y="884" class="body">• 不做组队管理、学生互换题目、AI 决策、多套算法或人工插队</text>
+</svg>
