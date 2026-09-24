@@ -1,36 +1,5 @@
 # CourseMatch
 
-#### Description
-课程项目选题、组队与审批系统
+CourseMatch is a software-engineering course project for transparent student topic selection. Teachers configure topics, capacity and deadlines; students submit ordered preferences; allocation processes preference rounds before using a frozen random order to break same-topic, same-round ties.
 
-#### Software Architecture
-Software architecture description
-
-#### Installation
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### Instructions
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### Contribution
-
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
-
-
-#### Gitee Feature
-
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+The current repository contains initiation materials and a first requirements baseline, **not** a deployed or tested application. The [Chinese README](README.md) describes the current scope and workflow. For course verification, see the [GitHub evidence index](docs/EVIDENCE_INDEX.md); older Gitee references document history, not the current submission location.
