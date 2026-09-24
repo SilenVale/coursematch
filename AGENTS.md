@@ -6,7 +6,7 @@
 
 1. 阅读 `README.md`、`docs/PROJECT_CONTRACT.md` 和 `docs/COLLABORATION.md`。
 2. 在项目根目录执行 `git status`，确认当前分支和未提交改动。
-3. 先确认对应的 Gitee Issue、负责范围与验收标准；没有明确任务时，不开始实现。
+3. 先确认对应的 GitHub Issue、负责范围与验收标准；没有明确任务时，不开始实现。
 4. 从最新 `master` 创建自己的任务分支，不直接修改或推送 `master`。
 
 ## 修改边界

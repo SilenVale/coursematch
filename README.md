@@ -6,15 +6,14 @@ CourseMatch 是一个面向课程项目的选题、志愿填报与结果公示�
 
 ## 当前状态
 
-项目处于第一周立项阶段。当前已建立仓库与协作规范；团队名单、会议记录、思维导图和 NABCD 分析将在 Gitee Wiki 中留存。
+已完成第一周立项材料与第二周第一版需求基线；需求文档是待验证的规格，不代表系统已经实现或通过测试。课程提交与核验以本 GitHub 仓库为准，早期 Gitee/Wiki 仅保留历史记录。
 
 ## 第一版范围
 
-- 教师发布和维护课程题目；
-- 学生浏览、筛选并填报志愿；
-- 系统检查题目名额和重复申请；
-- 教师查看申请并确认分配；
-- 学生查看自己的结果和公开的选题进度。
+- 教师设置选题活动、参与名单、题目名额、资格条件及截止时间；
+- 学生浏览题目，提交 1～3 个有序且不重复的志愿；
+- 截止后冻结数据，按志愿轮次优先、同题同轮超额时按冻结序号分配；
+- 学生查看个人结果与原因，未分配者进入补选；教师异常调整需留痕。
 
 第一版不做移动端 App、支付、完整教学管理系统或复杂 AI 自动决策。
 
@@ -23,7 +22,7 @@ CourseMatch 是一个面向课程项目的选题、志愿填报与结果公示�
 - [项目任务契约](docs/PROJECT_CONTRACT.md)
 - [团队协作规则](docs/COLLABORATION.md)
 - [AI 协作规则](AGENTS.md)
-- Gitee Wiki：课程立项、原型、进度计划、测试和用户反馈的过程证据。
+- [课程核验证据索引](docs/EVIDENCE_INDEX.md)：按 GitHub 提交版本定位立项、需求与讨论证据，注明缺失项。
 
 ## 开发约定
 
@@ -35,7 +34,7 @@ CourseMatch 是一个面向课程项目的选题、志愿填报与结果公示�
 ## 本地初始化
 
 ```bash
-git clone https://gitee.com/SilenVale/coursematch.git
+git clone https://github.com/SilenVale/coursematch.git
 cd coursematch
 git switch master
 git pull --ff-only
