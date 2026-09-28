@@ -8,8 +8,9 @@
 | S2 群聊原图 | [截图 1](https://github.com/SilenVale/coursematch/blob/dc220e7973e90a5112215d93fd34bae6bfea4fdc/docs/assets/evidence/week1-wechat-discussion-1.png)、[截图 2](https://github.com/SilenVale/coursematch/blob/dc220e7973e90a5112215d93fd34bae6bfea4fdc/docs/assets/evidence/week1-wechat-discussion-2.png) | 当时发送了任务划分，部分成员认领模块 | 截图未完整展示全组对算法、名额和补选细则逐条表决 |
 | S3 团队需求 | [需求分析基线 v1.0](https://github.com/SilenVale/coursematch/blob/dc220e7973e90a5112215d93fd34bae6bfea4fdc/docs/REQUIREMENTS_ANALYSIS.md)、[团队共同基准](https://github.com/SilenVale/coursematch/blob/dc220e7973e90a5112215d93fd34bae6bfea4fdc/docs/TEAM_BASELINE.md)、[项目任务契约](https://github.com/SilenVale/coursematch/blob/dc220e7973e90a5112215d93fd34bae6bfea4fdc/docs/PROJECT_CONTRACT.md) | FR-01～FR-09、AC-01～AC-09、范围和共同业务规则的文档版本；契约是更早的立项文档，具体分配规则以需求基线为准 | 不代表代码已实现、性能已达标或个人新建议已成为团队基线 |
 | S11 规则增补 | [2026-09-28 团队总结](./TEAM_DECISIONS_2026-09-28.md)、[Issue #7](https://github.com/SilenVale/coursematch/issues/7) | 负责人转述的补选、空位、身份及验收边界，供后续设计和个人报告追溯 | 不是逐人表决截图；待定实施项、正式性能数字及运行结果仍须另证 |
+| S16 方案补充 | [2026-09-28 负责人补充确认](./DECISION_FOLLOWUP_2026-09-28.md) | 补选轮次/默认时长、名额上界、环境/浏览器/通知与性能测试目标的后续决定 | 不等于教师批准、系统实现或测试达标；10 人试用招募待定 |
 
 ## 证据缺口与使用边界
 
 - S4/S7/S8/S9 是个人 AI 协作对话，不在公开仓库：已整理关键片段并由本人在 2026-09-24 的对话中总体确认，作为个人作业附件单独提供；不公开完整私人对话，也不宣称 GitHub 已能独立核验这些来源。
-- 补选结算与空位处理的团队总结见 S11；旧报告提交时仍属个人建议，不追改其历史状态。正式性能/易用性阈值及部分身份实施细节尚未确定；本索引不冒充实现测试或真实用户访谈。
+- 补选结算与空位处理的团队总结见 S11；旧报告提交时仍属个人建议，不追改其历史状态。S16 进一步记录负责人确认的性能**目标**；测试环境、结果、部分身份实施细节和 10 人试用招募尚未落实。本索引不冒充实现测试或真实用户访谈。
