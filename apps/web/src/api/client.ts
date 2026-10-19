@@ -1,0 +1,46 @@
+import type { ActorView, BusinessApiFailure } from "@coursematch/shared";
+
+const JSON_HEADER = { "Content-Type": "application/json" };
+const REQUEST_HEADER = { "X-CourseMatch-Request": "1" };
+
+async function parse<T>(res: Response): Promise<T> {
+  const body = await res.json();
+  if (!res.ok) {
+    const err = body as BusinessApiFailure;
+    throw new Error(err.error?.message ?? res.statusText);
+  }
+  return body as T;
+}
+
+export async function apiLogin(identifier: string, password: string) {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    credentials: "include",
+    headers: { ...JSON_HEADER, ...REQUEST_HEADER },
+    body: JSON.stringify({ identifier, password }),
+  });
+  const json = await parse<{ data: ActorView }>(res);
+  return json.data;
+}
+
+export async function apiMe(): Promise<ActorView | null> {
+  const res = await fetch("/api/auth/me", { credentials: "include" });
+  if (res.status === 401) return null;
+  const json = await parse<{ data: ActorView }>(res);
+  return json.data;
+}
+
+export async function apiLogout() {
+  await fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+    headers: REQUEST_HEADER,
+  });
+}
+
+export async function apiActivities() {
+  const list = await fetch("/api/activities", { credentials: "include" });
+  return parse<{ data: { items: { activityId: string; title: string; lifecycle: string }[] } }>(
+    list,
+  );
+}

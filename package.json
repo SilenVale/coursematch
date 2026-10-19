@@ -1,0 +1,20 @@
+{
+  "name": "coursematch",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @coursematch/api & npm run dev -w @coursematch/web",
+    "dev:api": "npm run dev -w @coursematch/api",
+    "dev:web": "npm run dev -w @coursematch/web",
+    "build": "npm run build -w @coursematch/shared && npm run build -w @coursematch/allocation && npm run build -w @coursematch/api && npm run build -w @coursematch/web",
+    "migrate": "npm run migrate -w @coursematch/api",
+    "seed": "npm run seed -w @coursematch/api",
+    "test": "npm run test -w @coursematch/allocation && npm run test -w @coursematch/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
