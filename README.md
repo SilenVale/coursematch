@@ -8,6 +8,8 @@
 
 架构契约：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（来源：设计报告 v0.5，平台最高分 98.6）。类型：[docs/contracts/api-contracts.ts](docs/contracts/api-contracts.ts)（与 `packages/shared` 同步）。
 
+**第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md)（组员与 Agent 实现业务前必读）。
+
 ## 本地启动
 
 ```bash

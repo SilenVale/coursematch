@@ -4,7 +4,7 @@
 
 ## 开始任务前
 
-1. 阅读 `README.md`、`docs/PROJECT_CONTRACT.md` 和 `docs/COLLABORATION.md`。
+1. 阅读 `README.md`、`docs/V1_DELIVERY_PLAN.md`、`docs/ARCHITECTURE.md`、`docs/PROJECT_CONTRACT.md` 和 `docs/COLLABORATION.md`。
 2. 在项目根目录执行 `git status`，确认当前分支和未提交改动。
 3. 先确认对应的 GitHub Issue、负责范围与验收标准；没有明确任务时，不开始实现。
 4. 从最新 `master` 创建自己的任务分支，不直接修改或推送 `master`。
@@ -14,7 +14,7 @@
 - 只修改当前任务需要的文件；发现共享文件、需求或数据结构需要改变时，先在群里说明并等待负责人确认。
 - 不擅自引入大型框架、付费服务或第三方账号依赖。
 - 不提交 `.env`、密钥、个人配置、`node_modules`、构建产物、临时日志或录屏文件。
-- 当前技术栈尚未确定，不得虚构安装、构建或测试命令。
+- 技术栈以 `docs/ARCHITECTURE.md` 与根目录 `README.md` 为准；不得虚构安装、构建或测试命令。
 
 ## 提交与合并
 
