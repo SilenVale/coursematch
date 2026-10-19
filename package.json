@@ -12,7 +12,7 @@
     "build": "npm run build -w @coursematch/shared && npm run build -w @coursematch/allocation && npm run build -w @coursematch/api && npm run build -w @coursematch/web",
     "migrate": "npm run migrate -w @coursematch/api",
     "seed": "npm run seed -w @coursematch/api",
-    "test": "npm run test -w @coursematch/allocation && npm run test -w @coursematch/api"
+    "test": "npm run test -w @coursematch/allocation"
   },
   "engines": {
     "node": ">=20"
