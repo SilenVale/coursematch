@@ -1,0 +1,40 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #111;
+  background: #f6f7f9;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: #0b57d0;
+}
+
+.shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e5ea;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+button {
+  cursor: pointer;
+}
+
+input {
+  padding: 8px;
+  margin-right: 8px;
+}
+
+.error {
+  color: #b3261e;
+}
