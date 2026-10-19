@@ -119,7 +119,7 @@ V3（可选）：通知渠道、与学院身份系统对接（需校方授权与
 1. 本文件 `docs/V1_DELIVERY_PLAN.md`  
 2. `docs/ARCHITECTURE.md`、`docs/ALLOCATION.md`、`docs/ERROR_CODES.md`  
 3. `docs/contracts/api-contracts.ts` 或 `packages/shared`  
-4. 任务负责人的 `INTERNAL_MODULES.md` 中的文件路径  
+4. 任务负责人的 [roles/](./roles/) 任务卡与 `INTERNAL_MODULES.md` 中的文件路径  
 5. 当前分支从 `master` 拉出；改动范围仅限被指派的模块文件  
 
 **完成定义：** 对应 §1.4 中与本人模块相关的勾选项有可复核证据，且未触犯 §二中的禁止做法。

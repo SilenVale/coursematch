@@ -10,6 +10,8 @@
 
 **第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md)（组员与 Agent 实现业务前必读）。
 
+**组员任务卡与 Agent 开场词：** [docs/roles/README.md](docs/roles/README.md)、[docs/AGENT_START.md](docs/AGENT_START.md)。
+
 ## 本地启动
 
 ```bash
@@ -23,6 +25,16 @@ npm run seed
 npm run dev:api    # 终端 1，http://localhost:3001
 npm run dev:web    # 终端 2，http://localhost:5173
 ```
+
+### 环境变量
+
+`.env` 放在**仓库根目录**。若 `npm run migrate` 报 `DATABASE_URL is required`，在根目录执行：
+
+```bash
+set -a && source .env && set +a && npm run migrate && npm run seed
+```
+
+（macOS/Linux；Windows 可用等价方式导出变量，或将 `.env` 复制到 `apps/api/.env`。）
 
 ### 种子账号（仅开发）
 
@@ -43,11 +55,14 @@ npm test
 
 ## 组员从哪开始
 
-| 成员 | 前端 | 后端 |
-|---|---|---|
-| 石俊贤 | `apps/web/src/pages/teacher/ActivityConfigPlaceholder.tsx` | `apps/api/src/routes/activities/config.ts` |
-| 刘家铭 | `apps/web/src/pages/student/*` | `apps/api/src/routes/activities/preferences.ts`、`results.ts`（学生本人结果） |
-| 罗子超 | `apps/web/src/pages/teacher/FreezeAllocationPlaceholder.tsx` | `packages/allocation/`、`freeze-allocation.ts`、`results.ts`（教师侧） |
+每人先打开 **[docs/roles/](docs/roles/)** 里自己的任务卡（含验收清单与允许改动的路径），再用 **[docs/AGENT_START.md](docs/AGENT_START.md)** 约束 Agent。
+
+| 成员 | 任务卡 |
+|---|---|
+| 石俊贤 | [石俊贤-M2-活动配置.md](docs/roles/石俊贤-M2-活动配置.md) |
+| 刘家铭 | [刘家铭-M3-志愿与学生结果.md](docs/roles/刘家铭-M3-志愿与学生结果.md) |
+| 罗子超 | [罗子超-M4M5-冻结分配与教师结果.md](docs/roles/罗子超-M4M5-冻结分配与教师结果.md) |
+| 汪奕辰 | [汪奕辰-集成与验收.md](docs/roles/汪奕辰-集成与验收.md) |
 
 细节：[docs/INTERNAL_MODULES.md](docs/INTERNAL_MODULES.md)、[docs/ALLOCATION.md](docs/ALLOCATION.md)。
 
