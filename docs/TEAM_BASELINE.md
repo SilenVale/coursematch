@@ -1,5 +1,7 @@
 # CourseMatch 团队共同基准（组员阅读版）
 
+> **分工与实现范围已更新：** 写代码、拆任务、Agent 开工请以 [ARCHITECTURE.md](./ARCHITECTURE.md)、[V1_DELIVERY_PLAN.md](./V1_DELIVERY_PLAN.md) 与 [roles/README.md](./roles/README.md) 为准。下文 §4 角色表为立项期描述，**勿按「石=分配、罗=测试」实现**。
+
 > 这是一份共同起点：用于理解当前产品做什么、核心流程怎样运行，以及个人分析可以从哪里提出改进。它不是让大家重复写的长需求文档。
 
 ## 1. 我们要做什么

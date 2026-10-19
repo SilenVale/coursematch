@@ -4,10 +4,12 @@
 
 ## 开始任务前
 
-1. 阅读 `README.md`、`docs/V1_DELIVERY_PLAN.md`、`docs/ARCHITECTURE.md`、`docs/PROJECT_CONTRACT.md` 和 `docs/COLLABORATION.md`。
-2. 在项目根目录执行 `git status`，确认当前分支和未提交改动。
-3. 先确认对应的 GitHub Issue、负责范围与验收标准；没有明确任务时，不开始实现。
-4. 从最新 `master` 创建自己的任务分支，不直接修改或推送 `master`。
+1. 复制 `docs/AGENT_START.md` 中的通用提示词，填入本人姓名与当前任务，再交给 AI。
+2. 阅读本人任务卡：`docs/roles/README.md` → 对应成员的 `.md` 文件。
+3. 阅读 `README.md`、`docs/V1_DELIVERY_PLAN.md`、`docs/ARCHITECTURE.md`、`docs/PROJECT_CONTRACT.md` 和 `docs/COLLABORATION.md`。
+4. 在项目根目录执行 `git status`，确认当前分支和未提交改动。
+5. 没有明确任务与验收标准时，不开始实现。
+6. 从最新 `master` 创建自己的任务分支，不直接修改或推送 `master`。
 
 ## 修改边界
 

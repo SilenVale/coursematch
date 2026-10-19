@@ -1,5 +1,7 @@
 # CourseMatch 第一周立项确认版
 
+> **实现分工 superseded：** 开发任务与验收见 [roles/README.md](./roles/README.md)、[V1_DELIVERY_PLAN.md](./V1_DELIVERY_PLAN.md)。本文保留立项与课程证据，成员角色表可能与当前代码分工不一致。
+
 > 状态：已通过微信群线上异步讨论确认。讨论记录与截图见 [第一周线上异步立项讨论记录](./WEEK1_ASYNC_KICKOFF_RECORD.md)；该材料如实记录线上讨论，不表述为线下会议。
 
 ## 1. 项目基本信息
