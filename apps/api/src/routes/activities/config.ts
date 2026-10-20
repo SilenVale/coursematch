@@ -17,9 +17,14 @@ import type {
   ActivityPatchInput,
   ActivityView,
   ConfirmedIdentity,
+  ConfigVersionInput,
+  FieldError,
   Lifecycle,
   ParticipantView,
   RosterReplacedView,
+  StudentTopicView,
+  TopicCreateInput,
+  TopicPatchInput,
   VoidView,
 } from "@coursematch/shared";
 import { pool } from "../../db/pool.js";
@@ -30,6 +35,22 @@ import {
   fieldError,
   parseRoster,
 } from "./config-roster.js";
+import {
+  TOPIC_FIELD_COLUMNS,
+  toStudentTopicView,
+  toTeacherTopicView,
+  validateEligibility,
+  validateTopicCreate,
+  validateTopicFields,
+  type TopicRow,
+} from "./config-topics.js";
+import {
+  loadEligibleParticipantIds,
+  loadTopic,
+  publishBlockers,
+  requireDraft,
+  validateEligibleIds,
+} from "./config-topics-db.js";
 
 /** 可编辑的字段 → 数据库列名。 */
 const ACTIVITY_FIELD_COLUMNS = {
@@ -358,6 +379,8 @@ function sendRowErrors(reply: FastifyReply, rowErrors: unknown[]) {
   );
   return reply.code(status).send(body);
 }
+
+
 
 export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
   // 名单走裸 CSV 文本。Fastify 默认只认 application/json，
@@ -839,4 +862,351 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
       return ok(payload);
     },
   );
+
+  // ---------------------------------------------------------------- 题目：列表
+  app.get<{
+    Params: { activityId: string };
+    Querystring: { q?: string; tag?: string };
+  }>("/api/activities/:activityId/topics", async (req, reply) => {
+    if (!req.actor) {
+      const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
+      return reply.code(status).send(body);
+    }
+
+    const activityId = req.params.activityId;
+    // 学生视角需要 participantId 判断 canChoose；教师视角留空。
+    let studentParticipantId: string | null = null;
+
+    // 教师看自己的活动；学生必须在名单内，否则按「找不到」处理。
+    if (req.actor.role === "TEACHER") {
+      const owned = await loadOwnedActivity(req, reply, activityId);
+      if (!owned) return reply;
+    } else {
+      const { rows: member } = await pool.query<{ id: string }>(
+        `SELECT p.id FROM participant p
+         JOIN account a ON a.student_profile_id = p.student_profile_id
+         WHERE p.activity_id = $1 AND a.id = $2`,
+        [activityId, req.actor.accountId],
+      );
+      const { rows: act } = await pool.query<{ lifecycle: Lifecycle }>(
+        `SELECT lifecycle FROM activity WHERE id = $1`,
+        [activityId],
+      );
+      if (member.length === 0 || act.length === 0 || act[0].lifecycle === "DRAFT") {
+        const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
+        return reply.code(status).send(body);
+      }
+      studentParticipantId = member[0].id;
+    }
+
+    const { q, tag } = req.query ?? {};
+    const conditions = ["t.activity_id = $1"];
+    const params: unknown[] = [activityId];
+
+    if (q && q.trim() !== "") {
+      params.push(`%${q.trim()}%`);
+      const i = params.length;
+      conditions.push(`(t.title ILIKE $${i} OR t.description ILIKE $${i})`);
+    }
+    if (tag) {
+      params.push(tag);
+      conditions.push(`$${params.length} = ANY(t.tags)`);
+    }
+
+    const { rows } = await pool.query<TopicRow>(
+      `SELECT t.*,
+              COALESCE(
+                (SELECT COUNT(*) FROM preference pref WHERE pref.topic_id = t.id),
+                0
+              )::int AS preference_count
+       FROM topic t
+       WHERE ${conditions.join(" AND ")}
+       ORDER BY t.created_at, t.title`,
+      params,
+    ).catch(async (err: { code?: string }) => {
+      // preference 表由 M3 负责；未落地时热度按 0 处理，不阻断题目列表。
+      if (err.code !== "42P01") throw err;
+      return pool.query<TopicRow>(
+        `SELECT t.*, 0 AS preference_count FROM topic t
+         WHERE ${conditions.join(" AND ")}
+         ORDER BY t.created_at, t.title`,
+        params,
+      );
+    });
+
+    const eligibleMap = await loadEligibleParticipantIds(rows.map((r) => r.id));
+
+    const items = rows.map((row) =>
+      req.actor!.role === "TEACHER"
+        ? toTeacherTopicView(row, eligibleMap.get(row.id) ?? [])
+        : toStudentTopicView(
+            row,
+            eligibleMap.get(row.id) ?? [],
+            studentParticipantId ?? "",
+          ),
+    );
+
+    return ok({
+      items,
+      heatAsOf: new Date().toISOString(),
+      heatSource: "LIVE" as const,
+    });
+  });
+
+  // ---------------------------------------------------------------- 题目：新建
+  app.post<{ Params: { activityId: string }; Body: TopicCreateInput }>(
+    "/api/activities/:activityId/topics",
+    async (req, reply) => {
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+      if (!requireDraft(row, reply)) return reply;
+
+      const input = (req.body ?? {}) as Partial<TopicCreateInput>;
+      if (!checkConfigVersion(row, input.expectedConfigVersion, reply)) return reply;
+
+      const { fieldErrors, values } = validateTopicCreate(input);
+      if (fieldErrors.length > 0) {
+        const { status, body } = fail("INVALID_INPUT", "题目信息有误", 400, { fieldErrors });
+        return reply.code(status).send(body);
+      }
+
+      const invalid = await validateEligibleIds(row.id, values.ids ?? []);
+      if (invalid.length > 0) {
+        const { status, body } = fail("INVALID_INPUT", "限定名单里有不属于本活动名单的学生", 400, {
+          fieldErrors: invalid,
+        });
+        return reply.code(status).send(body);
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const { rows: created } = await client.query<TopicRow>(
+          `INSERT INTO topic (
+             id, activity_id, title, description, tags, capacity,
+             eligibility_mode, eligibility_description
+           ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+           RETURNING *`,
+          [
+            row.id,
+            values.title,
+            values.description ?? "",
+            values.tags ?? [],
+            values.capacity,
+            values.eligibilityMode,
+            values.eligibilityDescription ?? "",
+          ],
+        );
+        const topicId = created[0].id;
+
+        if (values.eligibilityMode === "EXPLICIT" && (values.ids?.length ?? 0) > 0) {
+          await client.query(
+            `INSERT INTO topic_eligible_participant (topic_id, participant_id)
+             SELECT $1, unnest($2::uuid[])`,
+            [topicId, values.ids],
+          );
+        }
+
+        const { rows: versionRows } = await client.query<{ config_version: number }>(
+          `UPDATE activity SET config_version = config_version + 1
+           WHERE id = $1 RETURNING config_version`,
+          [row.id],
+        );
+        await client.query("COMMIT");
+
+        const eligibleMap = await loadEligibleParticipantIds([topicId]);
+        return ok({
+          topic: toTeacherTopicView(created[0], eligibleMap.get(topicId) ?? []),
+          configVersion: versionRows[0].config_version,
+        });
+      } catch (err) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------- 题目：修改
+  app.patch<{ Params: { activityId: string; topicId: string }; Body: TopicPatchInput }>(
+    "/api/activities/:activityId/topics/:topicId",
+    async (req, reply) => {
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+      if (!requireDraft(row, reply)) return reply;
+
+      const input = (req.body ?? {}) as Partial<TopicPatchInput>;
+      if (!checkConfigVersion(row, input.expectedConfigVersion, reply)) return reply;
+
+      const existing = await loadTopic(row.id, req.params.topicId, reply);
+      if (!existing) return reply;
+
+      const { fieldErrors, values } = validateTopicFields(input);
+      const eligibility = validateEligibility(input);
+      const allErrors = [...fieldErrors, ...eligibility.fieldErrors];
+
+      const hasAnyChange =
+        Object.keys(values).length > 0 || eligibility.mode !== undefined;
+      if (!hasAnyChange && allErrors.length === 0) {
+        const { status, body } = fail("INVALID_INPUT", "没有需要修改的字段", 400);
+        return reply.code(status).send(body);
+      }
+      if (allErrors.length > 0) {
+        const { status, body } = fail("INVALID_INPUT", "题目信息有误", 400, {
+          fieldErrors: allErrors,
+        });
+        return reply.code(status).send(body);
+      }
+
+      if (eligibility.mode !== undefined) {
+        const invalid = await validateEligibleIds(row.id, eligibility.ids ?? []);
+        if (invalid.length > 0) {
+          const { status, body } = fail(
+            "INVALID_INPUT",
+            "限定名单里有不属于本活动名单的学生",
+            400,
+            { fieldErrors: invalid },
+          );
+          return reply.code(status).send(body);
+        }
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const sets: string[] = [];
+        const params: unknown[] = [];
+        for (const [key, column] of Object.entries(TOPIC_FIELD_COLUMNS)) {
+          const value = values[key as keyof typeof values];
+          if (value === undefined) continue;
+          params.push(value);
+          sets.push(`${column} = $${params.length}`);
+        }
+        if (eligibility.mode !== undefined) {
+          params.push(eligibility.mode);
+          sets.push(`eligibility_mode = $${params.length}`);
+        }
+
+        params.push(existing.id);
+        const { rows: updated } = await client.query<TopicRow>(
+          `UPDATE topic SET ${sets.join(", ")} WHERE id = $${params.length} RETURNING *`,
+          params,
+        );
+
+        // 资格名单整体重写：模式为 ALL 时清空，EXPLICIT 时按新名单覆盖。
+        if (eligibility.mode !== undefined) {
+          await client.query(
+            `DELETE FROM topic_eligible_participant WHERE topic_id = $1`,
+            [existing.id],
+          );
+          if (eligibility.mode === "EXPLICIT" && (eligibility.ids?.length ?? 0) > 0) {
+            await client.query(
+              `INSERT INTO topic_eligible_participant (topic_id, participant_id)
+               SELECT $1, unnest($2::uuid[])`,
+              [existing.id, eligibility.ids],
+            );
+          }
+        }
+
+        const { rows: versionRows } = await client.query<{ config_version: number }>(
+          `UPDATE activity SET config_version = config_version + 1
+           WHERE id = $1 RETURNING config_version`,
+          [row.id],
+        );
+        await client.query("COMMIT");
+
+        const eligibleMap = await loadEligibleParticipantIds([existing.id]);
+        return ok({
+          topic: toTeacherTopicView(updated[0], eligibleMap.get(existing.id) ?? []),
+          configVersion: versionRows[0].config_version,
+        });
+      } catch (err) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------- 题目：删除
+  app.delete<{ Params: { activityId: string; topicId: string }; Body: ConfigVersionInput }>(
+    "/api/activities/:activityId/topics/:topicId",
+    async (req, reply) => {
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+      if (!requireDraft(row, reply)) return reply;
+
+      if (!checkConfigVersion(row, req.body?.expectedConfigVersion, reply)) return reply;
+
+      const existing = await loadTopic(row.id, req.params.topicId, reply);
+      if (!existing) return reply;
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(`DELETE FROM topic WHERE id = $1`, [existing.id]);
+        const { rows: versionRows } = await client.query<{ config_version: number }>(
+          `UPDATE activity SET config_version = config_version + 1
+           WHERE id = $1 RETURNING config_version`,
+          [row.id],
+        );
+        await client.query("COMMIT");
+        return ok({ configVersion: versionRows[0].config_version });
+      } catch (err) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------- 发布
+  app.post<{ Params: { activityId: string }; Body: ConfigVersionInput }>(
+    "/api/activities/:activityId/publish",
+    async (req, reply) => {
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+
+      if (row.lifecycle !== "DRAFT") {
+        const { status, body } = fail(
+          "CONFIG_LOCKED",
+          `只有草稿可以发布，当前状态为${LIFECYCLE_LABEL[row.lifecycle]}`,
+          409,
+        );
+        return reply.code(status).send(body);
+      }
+      if (!checkConfigVersion(row, req.body?.expectedConfigVersion, reply)) return reply;
+
+      const blockers = await publishBlockers(row);
+      if (blockers.length > 0) {
+        const { status, body } = fail(
+          "INVALID_INPUT",
+          `配置未齐备，不能发布：${blockers.map((b) => b.message).join("；")}`,
+          400,
+          { fieldErrors: blockers },
+        );
+        return reply.code(status).send(body);
+      }
+
+      const { rows } = await pool.query<ActivityRow>(
+        `UPDATE activity
+         SET lifecycle = 'PUBLISHED', published_at = NOW(),
+             config_version = config_version + 1
+         WHERE id = $1 AND lifecycle = 'DRAFT'
+         RETURNING *`,
+        [row.id],
+      );
+      if (rows.length === 0) {
+        const { status, body } = fail("VERSION_CONFLICT", "活动状态已变化，请刷新后重试", 409);
+        return reply.code(status).send(body);
+      }
+
+      return ok(toActivityView(rows[0]));
+    },
+  );
 };
+

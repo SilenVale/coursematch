@@ -374,7 +374,16 @@ export function ActivityConfigPage() {
                 onChanged={() => void loadCounts(activity.activityId)}
               />
 
-              <TopicPanel activityId={activity.activityId} editable={canEditBasics} />
+              <TopicPanel
+                activityId={activity.activityId}
+                configVersion={activity.configVersion}
+                editable={canEditBasics}
+                onVersionChange={handleVersionChange}
+                onTopicsChanged={(count) => {
+                  setTopicCount(count);
+                  setTopicPending(false);
+                }}
+              />
 
               <PublishPanel
                 activity={activity}

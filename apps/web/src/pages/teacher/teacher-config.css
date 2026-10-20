@@ -517,3 +517,61 @@
   margin-top: 8px;
   overflow-x: auto;
 }
+
+/* 题目编辑表单 */
+.cm-topic-form {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #dde2e9;
+}
+
+.cm-topic-form h3 {
+  margin-top: 0;
+}
+
+.cm-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cm-row-actions button {
+  padding: 3px 10px;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+}
+
+.cm-row-actions button:hover:not(:disabled) {
+  border-color: #0b57d0;
+  color: #0b57d0;
+}
+
+.cm-row-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cm-participant-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #e8ebef;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.cm-check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.cm-check-item input {
+  width: auto;
+  margin: 0;
+}
