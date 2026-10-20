@@ -3,7 +3,7 @@ import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import type { ActorView } from "@coursematch/shared";
 import { apiLogout, apiMe } from "./api/client";
 import { LoginPage } from "./pages/Login";
-import { ActivityConfigPlaceholder } from "./pages/teacher/ActivityConfigPlaceholder";
+import { ActivityConfigPage } from "./pages/teacher/ActivityConfigPage";
 import { FreezeAllocationPlaceholder } from "./pages/teacher/FreezeAllocationPlaceholder";
 import { PreferencesPlaceholder } from "./pages/student/PreferencesPlaceholder";
 import { ResultsPlaceholder } from "./pages/student/ResultsPlaceholder";
@@ -79,7 +79,7 @@ export function App() {
           path="/teacher/config"
           element={
             actor?.role === "TEACHER" ? (
-              <ActivityConfigPlaceholder />
+              <ActivityConfigPage />
             ) : (
               <Navigate to="/" replace />
             )
