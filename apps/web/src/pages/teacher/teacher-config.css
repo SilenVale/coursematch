@@ -1,4 +1,5 @@
 /* 石俊贤 · M2 教师配置页样式。只作用于 .cm-config 内部，避免影响他人页面。 */
+/* 注意：勿对 #fff 做盲目全局替换（会误伤 #fff8e6 等六位色）。 */
 
 .cm-config {
   display: block;
@@ -34,8 +35,8 @@
 .cm-main > .cm-panel,
 .cm-summary,
 .cm-create {
-  background: #fff;
-  border: 1px solid #e2e5ea;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -63,8 +64,8 @@
 .cm-activity {
   width: 100%;
   text-align: left;
-  background: #fafbfc;
-  border: 1px solid #e2e5ea;
+  background: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px;
   display: flex;
@@ -250,7 +251,7 @@
   padding: 8px 14px;
   border: 1px solid #cfd6df;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
 }
 
@@ -269,12 +270,12 @@
 .cm-actions button:first-child:not(:disabled) {
   background: #0b57d0;
   border-color: #0b57d0;
-  color: #fff;
+  color: var(--card);
 }
 
 .cm-actions button:first-child:hover:not(:disabled) {
   background: #0a4ab0;
-  color: #fff;
+  color: var(--card);
 }
 
 .cm-error {
@@ -408,7 +409,7 @@
   padding: 7px 12px;
   border: 1px solid #cfd6df;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
 }
 
@@ -482,7 +483,7 @@
   align-items: baseline;
   padding: 6px 8px;
   border-radius: 6px;
-  background: #fafbfc;
+  background: var(--muted);
   font-size: 13px;
 }
 
@@ -538,7 +539,7 @@
   padding: 3px 10px;
   border: 1px solid #cfd6df;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
   font-size: 12px;
 }

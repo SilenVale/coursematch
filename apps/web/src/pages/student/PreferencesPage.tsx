@@ -142,35 +142,34 @@ export function PreferencesPage() {
 
   return (
     <div className="card">
-      <h1>学生 · 志愿</h1>
-      <p style={{ color: "#555" }}>
-        按偏好顺序保存 1～{maxPreferences} 个题目。志愿只影响处理次序，不锁定名额；
-        截止后不可修改。
+      <h1 className="page-head">志愿填报</h1>
+      <p className="lead">
+        按偏好顺序保存 1～{maxPreferences} 个题目。志愿只影响处理次序，不锁定名额；截止后不可修改。
       </p>
 
-      {activities.length === 0 && <p>暂无已发布的活动你在名单内。</p>}
+      {activities.length === 0 && <p className="text-muted">暂无已发布的活动你在名单内。</p>}
 
       {activities.length > 0 && (
-        <p>
-          <label>
-            活动：
-            <select
-              value={activityId}
-              onChange={(e) => setActivityId(e.target.value)}
-              disabled={busy}
-            >
-              {activities.map((a) => (
-                <option key={a.activityId} value={a.activityId}>
-                  {a.title}（{a.phase}）
-                </option>
-              ))}
-            </select>
-          </label>
-        </p>
+        <div className="field-row" style={{ marginBottom: 12 }}>
+          <label className="label-inline" htmlFor="pref-activity">活动</label>
+          <select
+            id="pref-activity"
+            className="select"
+            value={activityId}
+            onChange={(e) => setActivityId(e.target.value)}
+            disabled={busy}
+          >
+            {activities.map((a) => (
+              <option key={a.activityId} value={a.activityId}>
+                {a.title}（{a.phase}）
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       {error && <p className="error">{error}</p>}
-      {notice && <p style={{ color: "#8a6d00" }}>{notice}</p>}
+      {notice && <p className="notice">{notice}</p>}
       {readOnly && (
         <p className="error">
           当前阶段为 {activity?.phase}，志愿已锁定，只能查看。
@@ -179,8 +178,8 @@ export function PreferencesPage() {
 
       {topics && (
         <>
-          <h2>题目</h2>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <h2 className="section-title">题目</h2>
+          <table className="data-table">
             <thead>
               <tr>
                 <th align="left">题目</th>
@@ -194,11 +193,11 @@ export function PreferencesPage() {
               {topics.items.filter(isStudentTopic).map((topic) => {
                 const picked = draft.indexOf(topic.topicId);
                 return (
-                  <tr key={topic.topicId} style={{ borderTop: "1px solid #eee" }}>
+                  <tr key={topic.topicId}>
                     <td>
                       <strong>{topic.title}</strong>
                       {topic.tags.length > 0 && (
-                        <div style={{ color: "#777", fontSize: 12 }}>
+                        <div className="text-muted" style={{ fontSize: 12 }}>
                           {topic.tags.join(" · ")}
                         </div>
                       )}
@@ -213,10 +212,11 @@ export function PreferencesPage() {
                     </td>
                     <td>
                       {picked >= 0 ? (
-                        <span style={{ color: "#2a7" }}>已加入（第 {picked + 1} 志愿）</span>
+                        <span className="badge">已加入（第 {picked + 1} 志愿）</span>
                       ) : (
                         <button
                           type="button"
+                          className="btn btn-sm"
                           onClick={() => add(topic.topicId)}
                           disabled={readOnly || !topic.canChoose || busy}
                         >
@@ -230,9 +230,9 @@ export function PreferencesPage() {
             </tbody>
           </table>
 
-          <h2>我的志愿（{draft.length}/{maxPreferences}）</h2>
+          <h2 className="section-title">我的志愿（{draft.length}/{maxPreferences}）</h2>
           {draft.length === 0 ? (
-            <p style={{ color: "#777" }}>
+            <p className="text-muted">
               还没有保存志愿。只保存一部分是允许的，但系统只会按你填写的顺序尝试。
             </p>
           ) : (
@@ -240,25 +240,13 @@ export function PreferencesPage() {
               {draft.map((topicId, index) => (
                 <li key={topicId} style={{ marginBottom: 6 }}>
                   {titleOf(topicId)}{" "}
-                  <button
-                    type="button"
-                    onClick={() => move(index, -1)}
-                    disabled={readOnly || index === 0 || busy}
-                  >
+                  <button type="button" className="btn btn-sm" onClick={() => move(index, -1)} disabled={readOnly || index === 0 || busy}>
                     上移
                   </button>{" "}
-                  <button
-                    type="button"
-                    onClick={() => move(index, 1)}
-                    disabled={readOnly || index === draft.length - 1 || busy}
-                  >
+                  <button type="button" className="btn btn-sm" onClick={() => move(index, 1)} disabled={readOnly || index === draft.length - 1 || busy}>
                     下移
                   </button>{" "}
-                  <button
-                    type="button"
-                    onClick={() => remove(index)}
-                    disabled={readOnly || busy}
-                  >
+                  <button type="button" className="btn btn-sm" onClick={() => remove(index)} disabled={readOnly || busy}>
                     移除
                   </button>
                 </li>
@@ -267,10 +255,10 @@ export function PreferencesPage() {
           )}
 
           <p>
-            <button type="button" onClick={save} disabled={readOnly || !dirty || busy}>
+            <button type="button" className="btn btn-primary" onClick={save} disabled={readOnly || !dirty || busy}>
               {busy ? "保存中…" : dirty ? "保存志愿" : "已是最新"}
             </button>{" "}
-            <small style={{ color: "#777" }}>
+            <small className="text-muted">
               当前版本 {version}
               {saved.length > 0 ? `，已保存 ${saved.length} 个志愿` : "，尚未保存"}
             </small>

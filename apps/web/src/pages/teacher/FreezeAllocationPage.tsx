@@ -66,18 +66,19 @@ export function FreezeAllocationPage() {
 
   return (
     <div className="card">
-      <h1>教师 · 冻结 / 分配 / 结果</h1>
-      <p style={{ color: "#555" }}>
-        截止后冻结 → 主分配 → 查看汇总 → 填写原因关闭。算法见{" "}
-        <code>packages/allocation</code>。
+      <h1 className="page-head">冻结与主分配</h1>
+      <p className="lead">
+        截止后生成冻结快照，再执行一次主分配。算法见 <code>packages/allocation</code>。
       </p>
 
-      <label>
-        活动
+      <div className="field-row" style={{ marginBottom: 12 }}>
+        <label className="label-inline" htmlFor="freeze-activity">活动</label>
         <select
+          id="freeze-activity"
+          className="select"
           value={activityId}
           onChange={(e) => setActivityId(e.target.value)}
-          style={{ marginLeft: 8, minWidth: 280 }}
+          style={{ minWidth: 280 }}
         >
           {activities.map((a) => (
             <option key={a.activityId} value={a.activityId}>
@@ -85,25 +86,38 @@ export function FreezeAllocationPage() {
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <p>冻结状态：{freezeState}</p>
+      <p className="text-muted">
+        冻结状态：<span className="text-mono">{freezeState}</span>
+      </p>
 
       {error && (
-        <p style={{ color: "#b00020" }} role="alert">
+        <p className="error" role="alert">
           {error}
         </p>
       )}
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-        <button type="button" disabled={busy || !activityId} onClick={() => run(() => apiFreezePost(activityId!).then())}>
+      <div className="btn-row">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={busy || !activityId}
+          onClick={() => run(() => apiFreezePost(activityId!).then())}
+        >
           生成冻结快照
         </button>
-        <button type="button" disabled={busy || !activityId} onClick={() => run(() => apiAllocate(activityId!).then())}>
+        <button
+          type="button"
+          className="btn"
+          disabled={busy || !activityId}
+          onClick={() => run(() => apiAllocate(activityId!).then())}
+        >
           执行主分配
         </button>
         <button
           type="button"
+          className="btn"
           disabled={busy || !activityId}
           onClick={() =>
             run(async () => {
@@ -121,6 +135,7 @@ export function FreezeAllocationPage() {
         </button>
         <button
           type="button"
+          className="btn"
           disabled={busy || !activityId}
           onClick={() =>
             run(async () => {
@@ -136,26 +151,26 @@ export function FreezeAllocationPage() {
 
       {results?.preparation === "READY" && (
         <section style={{ marginTop: 20 }}>
-          <h2>分配汇总</h2>
-          <p>
+          <h2 className="section-title">分配汇总</h2>
+          <p className="text-muted text-mono">
             已分配 {results.counts.assigned} · 落选 {results.counts.unallocated} · 未提交{" "}
             {results.counts.notSubmitted}
           </p>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <table className="data-table">
             <thead>
               <tr>
-                <th align="left">参与者</th>
-                <th align="left">状态</th>
-                <th align="left">题目</th>
-                <th align="left">序号</th>
+                <th>参与者</th>
+                <th>状态</th>
+                <th>题目</th>
+                <th>序号</th>
               </tr>
             </thead>
             <tbody>
               {results.items.map((row) => (
                 <tr key={row.participantId}>
-                  <td>{row.participantId.slice(0, 8)}…</td>
+                  <td className="text-mono">{row.participantId.slice(0, 8)}…</td>
                   <td>{row.status}</td>
-                  <td>{row.topicId ?? "—"}</td>
+                  <td className="text-mono">{row.topicId ?? "—"}</td>
                   <td>{row.lotteryNumber}</td>
                 </tr>
               ))}
