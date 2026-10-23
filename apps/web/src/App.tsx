@@ -57,7 +57,9 @@ export function App() {
   const location = useLocation();
 
   useEffect(() => {
-    apiMe().then(setActor);
+    apiMe()
+      .then(setActor)
+      .catch(() => setActor(null));
   }, []);
 
   const handleLogout = async () => {

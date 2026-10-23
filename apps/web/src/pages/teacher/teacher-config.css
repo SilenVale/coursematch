@@ -1,4 +1,5 @@
 /* 石俊贤 · M2 教师配置页样式。只作用于 .cm-config 内部，避免影响他人页面。 */
+/* 注意：勿对 #fff 做盲目全局替换（会误伤 #fff8e6 等六位色）。 */
 
 .cm-config {
   display: block;
@@ -154,7 +155,7 @@
 }
 
 .cm-hint {
-  background: var(--card)8e6;
+  background: #fff8e6;
   border: 1px solid #f0d9a0;
   border-radius: 6px;
   padding: 8px 10px;
@@ -344,7 +345,7 @@
 }
 
 .cm-badge-warn {
-  background: var(--card)3e0;
+  background: #fff3e0;
   border-color: #f0cf9a;
   color: #7a4a00;
 }
@@ -493,7 +494,7 @@
 
 .cm-void {
   border: 1px solid #f0cf9a;
-  background: var(--card)df7;
+  background: #fffdf7;
   border-radius: 6px;
   padding: 12px;
   margin-top: 12px;
