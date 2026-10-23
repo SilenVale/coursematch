@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { offerSummaryLine, unpackOfferDescription } from "../teacher/topicOfferFormat";
 import type {
   ActivitySummary,
   ActivityView,
@@ -144,7 +145,7 @@ export function PreferencesPage() {
     <div className="card">
       <h1 className="page-head">志愿填报</h1>
       <p className="lead">
-        按偏好顺序保存 1～{maxPreferences} 个题目。志愿只影响处理次序，不锁定名额；截止后不可修改。
+        按偏好顺序保存 1～{maxPreferences} 门课。志愿只影响处理次序，不预先占名额；截止后不可修改。
       </p>
 
       {activities.length === 0 && <p className="text-muted">暂无已发布的活动你在名单内。</p>}
@@ -178,11 +179,11 @@ export function PreferencesPage() {
 
       {topics && (
         <>
-          <h2 className="section-title">题目</h2>
+          <h2 className="section-title">可选课程</h2>
           <table className="data-table">
             <thead>
               <tr>
-                <th align="left">题目</th>
+                <th align="left">课程</th>
                 <th align="left">名额</th>
                 <th align="left">热度</th>
                 <th align="left">要求</th>
@@ -196,11 +197,21 @@ export function PreferencesPage() {
                   <tr key={topic.topicId}>
                     <td>
                       <strong>{topic.title}</strong>
-                      {topic.tags.length > 0 && (
-                        <div className="text-muted" style={{ fontSize: 12 }}>
-                          {topic.tags.join(" · ")}
-                        </div>
-                      )}
+                      {(() => {
+                        const line = offerSummaryLine(
+                          unpackOfferDescription(topic.description),
+                          "",
+                        );
+                        return line ? (
+                          <div className="text-muted" style={{ fontSize: 12 }}>
+                            {line}
+                          </div>
+                        ) : topic.tags.length > 0 ? (
+                          <div className="text-muted" style={{ fontSize: 12 }}>
+                            {topic.tags.join(" · ")}
+                          </div>
+                        ) : null;
+                      })()}
                     </td>
                     <td>{topic.capacity}</td>
                     <td>{topic.heat.preferenceCount}</td>
