@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ActivitySummary, TeacherResultsView } from "@coursematch/shared";
-import { apiActivities } from "../../api/client";
+import { useOutletContext } from "react-router-dom";
+import type { TeacherResultsView } from "@coursematch/shared";
 import {
   apiAllocate,
   apiClose,
@@ -10,23 +10,14 @@ import {
   apiTeacherResults,
 } from "./freezeApi";
 
+type CourseOutlet = { activityId: string };
+
 export function FreezeAllocationPage() {
-  const [activities, setActivities] = useState<ActivitySummary[]>([]);
-  const [activityId, setActivityId] = useState("");
+  const { activityId } = useOutletContext<CourseOutlet>();
   const [freezeState, setFreezeState] = useState<string>("—");
   const [results, setResults] = useState<TeacherResultsView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const loadActivities = useCallback(async () => {
-    const res = await apiActivities();
-    const items = res.data.items;
-    setActivities(items);
-    if (!activityId && items.length > 0) {
-      const demo = items.find((a) => a.title.includes("截止联调")) ?? items[0];
-      setActivityId(demo.activityId);
-    }
-  }, [activityId]);
 
   const refresh = useCallback(async () => {
     if (!activityId) return;
@@ -42,10 +33,6 @@ export function FreezeAllocationPage() {
     const r = await apiTeacherResults(activityId);
     setResults(r);
   }, [activityId]);
-
-  useEffect(() => {
-    loadActivities().catch((e) => setError(String(e)));
-  }, [loadActivities]);
 
   useEffect(() => {
     refresh().catch((e) => setError(String(e)));
@@ -66,27 +53,8 @@ export function FreezeAllocationPage() {
 
   return (
     <div className="card">
-      <h1 className="page-head">冻结与主分配</h1>
-      <p className="lead">
-        截止后生成冻结快照，再执行一次主分配。算法见 <code>packages/allocation</code>。
-      </p>
-
-      <div className="field-row" style={{ marginBottom: 12 }}>
-        <label className="label-inline" htmlFor="freeze-activity">活动</label>
-        <select
-          id="freeze-activity"
-          className="select"
-          value={activityId}
-          onChange={(e) => setActivityId(e.target.value)}
-          style={{ minWidth: 280 }}
-        >
-          {activities.map((a) => (
-            <option key={a.activityId} value={a.activityId}>
-              {a.title}（{a.lifecycle} / {a.phase}）
-            </option>
-          ))}
-        </select>
-      </div>
+      <h2 className="section-title">分配结果</h2>
+      <p className="lead">截止后生成冻结快照，再执行一次主分配。</p>
 
       <p className="text-muted">
         冻结状态：<span className="text-mono">{freezeState}</span>
