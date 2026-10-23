@@ -52,72 +52,66 @@ export function ResultsPage() {
 
   return (
     <div className="card">
-      <h1>学生 · 我的结果</h1>
-      <p style={{ color: "#555" }}>
+      <h1 className="page-head">我的结果</h1>
+      <p className="lead">
         只读服务端分配结果。区分已分配、志愿均未命中、未提交；不提供补选入口。
       </p>
 
-      {activities.length === 0 && <p>暂无已发布的活动你在名单内。</p>}
+      {activities.length === 0 && <p className="text-muted">暂无已发布的活动你在名单内。</p>}
 
       {activities.length > 0 && (
-        <p>
-          <label>
-            活动：
-            <select
-              value={activityId}
-              onChange={(e) => setActivityId(e.target.value)}
-              disabled={busy}
-            >
-              {activities.map((a) => (
-                <option key={a.activityId} value={a.activityId}>
-                  {a.title}（{a.phase}）
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" onClick={() => load(activityId)} disabled={!activityId || busy}>
+        <div className="field-row" style={{ marginBottom: 12 }}>
+          <label className="label-inline" htmlFor="result-activity">活动</label>
+          <select
+            id="result-activity"
+            className="select"
+            value={activityId}
+            onChange={(e) => setActivityId(e.target.value)}
+            disabled={busy}
+          >
+            {activities.map((a) => (
+              <option key={a.activityId} value={a.activityId}>
+                {a.title}（{a.phase}）
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn btn-sm" onClick={() => load(activityId)} disabled={!activityId || busy}>
             刷新
           </button>
-        </p>
+        </div>
       )}
 
       {error && <p className="error">{error}</p>}
 
       {result && activityTitle && (
         <section style={{ marginTop: 16 }}>
-          <h2>{activityTitle}</h2>
+          <h2 className="section-title">{activityTitle}</h2>
           <p>
-            <strong>{statusLabel(result)}</strong>
+            <span className="badge">{statusLabel(result)}</span>
             {result.preparation === "READY" && result.publishedAt && (
-              <span style={{ color: "#777", marginLeft: 8 }}>
+              <span className="text-muted" style={{ marginLeft: 8 }}>
                 公布于 {new Date(result.publishedAt).toLocaleString("zh-CN")}
               </span>
             )}
           </p>
 
           {result.preparation === "PENDING" && (
-            <p style={{ color: "#777" }}>教师尚未完成主分配，请稍后再查看。</p>
+            <p className="text-muted">教师尚未完成主分配，请稍后再查看。</p>
           )}
 
           {result.preparation === "READY" && (
-            <ul style={{ lineHeight: 1.6 }}>
-              <li>冻结序号：{result.lotteryNumber}</li>
+            <ul className="text-muted" style={{ lineHeight: 1.6 }}>
+              <li>冻结序号：<span className="text-mono">{result.lotteryNumber}</span></li>
               {result.status === "ASSIGNED" && (
                 <>
-                  <li>命中题目 ID：{result.topicId}</li>
+                  <li>命中题目 ID：<span className="text-mono">{result.topicId}</span></li>
                   <li>对应志愿顺位：第 {result.matchedRank} 志愿</li>
                 </>
               )}
-              {result.status === "UNALLOCATED" && (
-                <li>你已提交志愿，但各轮均未获得名额。</li>
-              )}
-              {result.status === "NOT_SUBMITTED" && (
-                <li>截止前未保存有效志愿，不参与分配。</li>
-              )}
+              {result.status === "UNALLOCATED" && <li>你已提交志愿，但各轮均未获得名额。</li>}
+              {result.status === "NOT_SUBMITTED" && <li>截止前未保存有效志愿，不参与分配。</li>}
               {result.rounds.length > 0 && (
-                <li>
-                  轮次明细（{result.rounds.length} 条）见接口返回；页面仅展示结论。
-                </li>
+                <li>轮次明细（{result.rounds.length} 条）见接口返回；页面仅展示结论。</li>
               )}
             </ul>
           )}

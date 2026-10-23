@@ -34,8 +34,8 @@
 .cm-main > .cm-panel,
 .cm-summary,
 .cm-create {
-  background: #fff;
-  border: 1px solid #e2e5ea;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -63,8 +63,8 @@
 .cm-activity {
   width: 100%;
   text-align: left;
-  background: #fafbfc;
-  border: 1px solid #e2e5ea;
+  background: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px;
   display: flex;
@@ -154,7 +154,7 @@
 }
 
 .cm-hint {
-  background: #fff8e6;
+  background: var(--card)8e6;
   border: 1px solid #f0d9a0;
   border-radius: 6px;
   padding: 8px 10px;
@@ -250,7 +250,7 @@
   padding: 8px 14px;
   border: 1px solid #cfd6df;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
 }
 
@@ -269,12 +269,12 @@
 .cm-actions button:first-child:not(:disabled) {
   background: #0b57d0;
   border-color: #0b57d0;
-  color: #fff;
+  color: var(--card);
 }
 
 .cm-actions button:first-child:hover:not(:disabled) {
   background: #0a4ab0;
-  color: #fff;
+  color: var(--card);
 }
 
 .cm-error {
@@ -344,7 +344,7 @@
 }
 
 .cm-badge-warn {
-  background: #fff3e0;
+  background: var(--card)3e0;
   border-color: #f0cf9a;
   color: #7a4a00;
 }
@@ -408,7 +408,7 @@
   padding: 7px 12px;
   border: 1px solid #cfd6df;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
 }
 
@@ -482,7 +482,7 @@
   align-items: baseline;
   padding: 6px 8px;
   border-radius: 6px;
-  background: #fafbfc;
+  background: var(--muted);
   font-size: 13px;
 }
 
@@ -493,7 +493,7 @@
 
 .cm-void {
   border: 1px solid #f0cf9a;
-  background: #fffdf7;
+  background: var(--card)df7;
   border-radius: 6px;
   padding: 12px;
   margin-top: 12px;
@@ -538,7 +538,7 @@
   padding: 3px 10px;
   border: 1px solid #cfd6df;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   font: inherit;
   font-size: 12px;
 }
