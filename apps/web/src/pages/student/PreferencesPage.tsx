@@ -119,9 +119,19 @@ export function PreferencesPage() {
       );
     } catch (e) {
       if (e instanceof StudentApiError && e.code === "VERSION_CONFLICT") {
-        // 别处改过：重新拉一次，避免用户拿着旧版本继续覆盖。
-        await load(activityId);
-        setNotice("志愿已在别处更新，已为你刷新，请重新确认后保存");
+        // 别处改过：只刷新版本与已保存值，保留用户当前的顺序，让他确认后再保存。
+        // 如果连草稿一起重置，用户刚才那次调整会静默消失。
+        try {
+          const latest = await fetchMyPreferences(activityId);
+          setVersion(latest.version);
+          setSaved(latest.topicIds);
+          setNotice(
+            `志愿已在别处更新，已加载最新版本（第 ${latest.version} 版）；` +
+              `你当前的顺序尚未保存，确认后再点「保存志愿」。`,
+          );
+        } catch (refreshError) {
+          setError(refreshError instanceof Error ? refreshError.message : "刷新失败");
+        }
       } else {
         setError(e instanceof Error ? e.message : "保存失败");
       }
