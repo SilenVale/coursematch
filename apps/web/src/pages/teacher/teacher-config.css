@@ -1,0 +1,577 @@
+/* 石俊贤 · M2 教师配置页样式。只作用于 .cm-config 内部，避免影响他人页面。 */
+
+.cm-config {
+  display: block;
+}
+
+.cm-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cm-page-head h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.cm-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .cm-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cm-sidebar,
+.cm-main > .cm-panel,
+.cm-summary,
+.cm-create {
+  background: #fff;
+  border: 1px solid #e2e5ea;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.cm-sidebar {
+  position: sticky;
+  top: 16px;
+}
+
+.cm-sidebar h2 {
+  font-size: 14px;
+  margin: 0 0 12px;
+  color: #555;
+}
+
+.cm-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cm-activity {
+  width: 100%;
+  text-align: left;
+  background: #fafbfc;
+  border: 1px solid #e2e5ea;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: inherit;
+  color: inherit;
+}
+
+.cm-activity:hover {
+  border-color: #b9c4d4;
+}
+
+.cm-activity.active {
+  border-color: #0b57d0;
+  background: #eef3fd;
+}
+
+.cm-activity-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-activity-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.cm-activity-time {
+  font-size: 12px;
+  color: #777;
+}
+
+.cm-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cm-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cm-summary h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.cm-summary-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.cm-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cm-panel-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.cm-panel h3 {
+  font-size: 14px;
+  margin: 20px 0 8px;
+}
+
+.cm-muted {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.cm-hint {
+  background: #fff8e6;
+  border: 1px solid #f0d9a0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #6b5200;
+}
+
+.cm-notice {
+  background: #eaf6ec;
+  border: 1px solid #b7dfc0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1e5b2b;
+}
+
+.cm-empty {
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.cm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cm-span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .cm-grid {
+    grid-template-columns: 1fr;
+  }
+  .cm-span-2 {
+    grid-column: span 1;
+  }
+}
+
+.cm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  margin: 0;
+}
+
+.cm-field > span {
+  color: #444;
+}
+
+.cm-field input,
+.cm-field select,
+.cm-field textarea {
+  padding: 8px;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  font: inherit;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cm-field input:disabled,
+.cm-field select:disabled,
+.cm-field textarea:disabled {
+  background: #f2f4f7;
+  color: #6b7280;
+}
+
+.cm-field textarea {
+  resize: vertical;
+}
+
+.cm-field-error {
+  color: #b3261e;
+  font-size: 12px;
+  margin: 0;
+}
+
+.cm-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.cm-actions button,
+.cm-page-head button {
+  padding: 8px 14px;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+}
+
+.cm-actions button:hover:not(:disabled),
+.cm-page-head button:hover:not(:disabled) {
+  border-color: #0b57d0;
+  color: #0b57d0;
+}
+
+.cm-actions button:disabled,
+.cm-page-head button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cm-actions button:first-child:not(:disabled) {
+  background: #0b57d0;
+  border-color: #0b57d0;
+  color: #fff;
+}
+
+.cm-actions button:first-child:hover:not(:disabled) {
+  background: #0a4ab0;
+  color: #fff;
+}
+
+.cm-error {
+  background: #fdecea;
+  border: 1px solid #f3b8b2;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 13px;
+  color: #8c1d18;
+  margin: 8px 0;
+}
+
+.cm-error-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.cm-error-head code,
+.cm-error-head strong {
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.cm-error-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.cm-link {
+  background: none;
+  border: none;
+  color: inherit;
+  text-decoration: underline;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.cm-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.cm-badge-draft {
+  background: #eef1f5;
+  border-color: #d5dbe4;
+  color: #445;
+}
+
+.cm-badge-published {
+  background: #e7f1ff;
+  border-color: #b9d3f7;
+  color: #0b4a9c;
+}
+
+.cm-badge-ok {
+  background: #e9f7ec;
+  border-color: #b7dfc0;
+  color: #1e5b2b;
+}
+
+.cm-badge-warn {
+  background: #fff3e0;
+  border-color: #f0cf9a;
+  color: #7a4a00;
+}
+
+.cm-badge-muted {
+  background: #f2f4f7;
+  border-color: #dde2e9;
+  color: #5b6472;
+}
+
+.cm-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e8ebef;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.cm-table-wrap table,
+.cm-row-errors table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.cm-table-wrap th,
+.cm-table-wrap td,
+.cm-row-errors th,
+.cm-row-errors td {
+  border-bottom: 1px solid #eef0f3;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cm-table-wrap thead th,
+.cm-row-errors thead th {
+  background: #f7f9fb;
+  font-weight: 600;
+  color: #445;
+  position: sticky;
+  top: 0;
+}
+
+.cm-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.cm-filters input {
+  padding: 7px 9px;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  font: inherit;
+  margin: 0;
+  min-width: 120px;
+}
+
+.cm-filters button {
+  padding: 7px 12px;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+}
+
+.cm-preview {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #dde2e9;
+}
+
+.cm-preview h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.cm-preview-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cm-roster-import {
+  border: 1px solid #e8ebef;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.cm-roster-import h3 {
+  margin-top: 0;
+}
+
+.cm-tag {
+  display: inline-block;
+  background: #f2f4f7;
+  border-radius: 4px;
+  padding: 0 6px;
+  margin-right: 4px;
+  font-size: 12px;
+  color: #445;
+}
+
+.cm-topic-desc {
+  margin-top: 2px;
+  max-width: 320px;
+}
+
+.cm-pending {
+  background: #f7f9fb;
+  border: 1px dashed #cfd6df;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.cm-pending p {
+  margin: 0 0 6px;
+}
+
+.cm-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cm-check {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #fafbfc;
+  font-size: 13px;
+}
+
+.cm-check-label {
+  font-weight: 600;
+  min-width: 110px;
+}
+
+.cm-void {
+  border: 1px solid #f0cf9a;
+  background: #fffdf7;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.cm-void p {
+  margin: 0 0 8px;
+}
+
+.cm-create {
+  display: block;
+}
+
+.cm-create h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.cm-row-errors {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+/* 题目编辑表单 */
+.cm-topic-form {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #dde2e9;
+}
+
+.cm-topic-form h3 {
+  margin-top: 0;
+}
+
+.cm-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cm-row-actions button {
+  padding: 3px 10px;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+}
+
+.cm-row-actions button:hover:not(:disabled) {
+  border-color: #0b57d0;
+  color: #0b57d0;
+}
+
+.cm-row-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cm-participant-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #e8ebef;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.cm-check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.cm-check-item input {
+  width: auto;
+  margin: 0;
+}

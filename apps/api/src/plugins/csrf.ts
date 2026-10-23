@@ -1,9 +1,10 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { fail } from "../lib/response.js";
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-export const csrfPlugin: FastifyPluginAsync = async (app) => {
+/** 在根 Fastify 实例上注册，使所有路由受 CSRF 规则约束。 */
+export function registerCsrfProtection(app: FastifyInstance) {
   const webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 
   app.addHook("preHandler", async (req, reply) => {
@@ -21,4 +22,4 @@ export const csrfPlugin: FastifyPluginAsync = async (app) => {
       return reply.code(status).send(body);
     }
   });
-};
+}

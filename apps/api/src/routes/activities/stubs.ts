@@ -10,17 +10,8 @@ function notImplemented(reply: { code: (n: number) => { send: (b: unknown) => un
   return reply.code(status).send(body);
 }
 
+/** M2 已实现的路由见 `config.ts`，此处仅保留未落地模块的占位。 */
 const stubPaths = [
-  "POST /api/activities",
-  "PATCH /api/activities/:activityId",
-  "GET /api/activities/:activityId/participants",
-  "POST /api/activities/:activityId/participants/preview",
-  "PUT /api/activities/:activityId/participants",
-  "GET /api/activities/:activityId/topics",
-  "POST /api/activities/:activityId/topics",
-  "PATCH /api/activities/:activityId/topics/:topicId",
-  "DELETE /api/activities/:activityId/topics/:topicId",
-  "POST /api/activities/:activityId/publish",
   "GET /api/activities/:activityId/preferences/me",
   "PUT /api/activities/:activityId/preferences/me",
   "GET /api/activities/:activityId/preferences",
@@ -30,31 +21,10 @@ const stubPaths = [
   "GET /api/activities/:activityId/results/me",
   "GET /api/activities/:activityId/results",
   "GET /api/activities/:activityId/evidence",
-  "POST /api/activities/:activityId/void",
   "POST /api/activities/:activityId/close",
 ] as const;
 
 export const activityStubRoutes: FastifyPluginAsync = async (app) => {
-  app.post("/api/activities", async (_req, reply) => notImplemented(reply));
-  app.patch("/api/activities/:activityId", async (_req, reply) => notImplemented(reply));
-  app.get("/api/activities/:activityId/participants", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.post("/api/activities/:activityId/participants/preview", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.put("/api/activities/:activityId/participants", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.get("/api/activities/:activityId/topics", async (_req, reply) => notImplemented(reply));
-  app.post("/api/activities/:activityId/topics", async (_req, reply) => notImplemented(reply));
-  app.patch("/api/activities/:activityId/topics/:topicId", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.delete("/api/activities/:activityId/topics/:topicId", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.post("/api/activities/:activityId/publish", async (_req, reply) => notImplemented(reply));
   app.get("/api/activities/:activityId/preferences/me", async (_req, reply) =>
     notImplemented(reply),
   );
@@ -74,7 +44,6 @@ export const activityStubRoutes: FastifyPluginAsync = async (app) => {
   );
   app.get("/api/activities/:activityId/results", async (_req, reply) => notImplemented(reply));
   app.get("/api/activities/:activityId/evidence", async (_req, reply) => notImplemented(reply));
-  app.post("/api/activities/:activityId/void", async (_req, reply) => notImplemented(reply));
   app.post("/api/activities/:activityId/close", async (_req, reply) => notImplemented(reply));
 
   void stubPaths;
