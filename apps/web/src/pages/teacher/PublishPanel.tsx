@@ -184,8 +184,14 @@ export function PublishPanel({
         <button
           type="button"
           onClick={handlePublish}
-          disabled={!isDraft || busy !== null}
-          title={isDraft ? "" : "只有草稿可以发布"}
+          disabled={!isDraft || busy !== null || blocking.length > 0}
+          title={
+            !isDraft
+              ? "只有草稿可以发布"
+              : blocking.length > 0
+                ? `还有 ${blocking.length} 项未通过：${blocking.map((b) => b.label).join("、")}`
+                : ""
+          }
         >
           {busy === "publish" ? "发布中…" : "发布活动"}
         </button>
