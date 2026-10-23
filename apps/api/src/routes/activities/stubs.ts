@@ -10,33 +10,15 @@ function notImplemented(reply: { code: (n: number) => { send: (b: unknown) => un
   return reply.code(status).send(body);
 }
 
-/** M2 已实现的路由见 `config.ts`，M3 已实现的路由见 `preferences.ts`，此处仅保留未落地模块的占位。 */
+/** M2/M3/M4/M5 已实现的路由见各自模块；此处仅保留未落地接口（教师侧志愿汇总）。 */
 const stubPaths = [
   "GET /api/activities/:activityId/preferences",
-  "GET /api/activities/:activityId/freeze",
-  "POST /api/activities/:activityId/freeze",
-  "POST /api/activities/:activityId/allocation",
-  "GET /api/activities/:activityId/results/me",
-  "GET /api/activities/:activityId/results",
-  "GET /api/activities/:activityId/evidence",
-  "POST /api/activities/:activityId/close",
 ] as const;
 
 export const activityStubRoutes: FastifyPluginAsync = async (app) => {
   app.get("/api/activities/:activityId/preferences", async (_req, reply) =>
     notImplemented(reply),
   );
-  app.get("/api/activities/:activityId/freeze", async (_req, reply) => notImplemented(reply));
-  app.post("/api/activities/:activityId/freeze", async (_req, reply) => notImplemented(reply));
-  app.post("/api/activities/:activityId/allocation", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.get("/api/activities/:activityId/results/me", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.get("/api/activities/:activityId/results", async (_req, reply) => notImplemented(reply));
-  app.get("/api/activities/:activityId/evidence", async (_req, reply) => notImplemented(reply));
-  app.post("/api/activities/:activityId/close", async (_req, reply) => notImplemented(reply));
 
   void stubPaths;
 };
