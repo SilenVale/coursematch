@@ -4,13 +4,13 @@
 
 ## 当前状态
 
-**V1 业务主链已在 `master` 接通**（本地可演示）：教师活动配置与发布、学生志愿、截止后冻结与主分配、教师汇总/证据/关闭、学生本人结果 API 与页面。公开 HTTPS 部署与 §1.4 八条证据仍在推进中。
+**V1 业务主链已在 `master` 接通**（本地或 Dev 公网可演示）：教师活动配置与发布、学生志愿、截止后冻结与主分配、教师汇总/证据/关闭、学生本人结果 API 与页面。Dev HTTPS 已上线；§1.4 八条证据汇总与 runbook 留证仍在推进中。
 
 架构契约：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（来源：设计报告 v0.5，平台最高分 98.6）。类型：[docs/contracts/api-contracts.ts](docs/contracts/api-contracts.ts)（与 `packages/shared` 同步）。
 
 **第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md) · 勾选表：[docs/V1_CHECKLIST.md](docs/V1_CHECKLIST.md) · 联调步骤：[docs/testing/v1-e2e-runbook.md](docs/testing/v1-e2e-runbook.md)
 
-**Dev 公网环境（Render，HTTPS）：** 部署说明见 [docs/deploy/dev-render.md](docs/deploy/dev-render.md)。合并 `render.yaml` 后，在 Render 用 Blueprint 一键创建；**演示 URL 待填入本行。**
+**Dev 公网环境（Render，HTTPS）：** [https://coursematch-dev.onrender.com](https://coursematch-dev.onrender.com)（健康检查：`GET /api/health`）。部署说明见 [docs/deploy/dev-render.md](docs/deploy/dev-render.md)。
 
 **组员任务卡与 Agent 开场词：** [docs/roles/README.md](docs/roles/README.md)、[docs/AGENT_START.md](docs/AGENT_START.md)。
 

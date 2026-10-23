@@ -9,19 +9,19 @@
 | 2 | 分配规则正确 | 罗子超 | ☐ | `npm test` 输出；系统内 ABCD 复核： |
 | 3 | 服务端权威 | 三人 PR + 联调 | ☐ | 越权用例（runbook §6）： |
 | 4 | 截止与冻结 | 刘 + 罗 | ☐ | 截止拒写截图；冻结完整快照： |
-| 5 | CSV 与发布 | 石俊贤 | ☐ | [m2-test-cases.md](./testing/m2-test-cases.md) + 实机： |
+| 5 | CSV 与发布 | 石俊贤 | ☐ | [m2-test-cases.md](./testing/m2-test-cases.md) · 集成测试 PR #28（`TC-M2-xxx`）+ Dev 实机： |
 | 6 | 契约一致 | 各 PR review | ☐ | |
-| 7 | 可公开体验 HTTPS | 汪奕辰 | ☐ | 演示 URL：README 已更新： |
+| 7 | 可公开体验 HTTPS | 汪奕辰 | ☑ | [https://coursematch-dev.onrender.com](https://coursematch-dev.onrender.com) · `GET /api/health` → 200 · README 已更新 |
 | 8 | 过程与质量 | 全员 | ☐ | 测试计划；组外试用 ≥1 次；各人可识别 PR： |
 
 ## 成员 PR 索引（示例，合并后填写）
 
 | 成员 | 模块 | PR |
 |------|------|-----|
-| 石俊贤 | M2 | #18, #21 |
-| 刘家铭 | M3 + 学生结果 | #22 |
+| 石俊贤 | M2 + 集成测试 | #18, #21, #28 |
+| 刘家铭 | M3 + 学生结果 | #22, #23 |
 | 罗子超 | M4/M5 教师 | #19 |
-| 汪奕辰 | 集成 / 学生结果闭环 / 文档 | （本轮 PR） |
+| 汪奕辰 | 集成 / Render Dev / 勾选表 | #27, #29, demo URL PR |
 
 ## 组外试用记录（模板）
 
