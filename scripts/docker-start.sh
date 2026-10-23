@@ -6,7 +6,7 @@ echo "Running migrations..."
 npx tsx apps/api/src/db/migrate.ts
 
 if [ "${RUN_SEED:-0}" = "1" ]; then
-  echo "Seeding database (RUN_SEED=1)..."
+  echo "Seeding database (RUN_SEED=1, SEED_MODE=${SEED_MODE:-accounts})..."
   npx tsx apps/api/src/db/seed.ts
 fi
 

@@ -40,12 +40,16 @@ set -a && source .env && set +a && npm run migrate && npm run seed
 
 ### 种子账号（仅开发）
 
-| 角色 | 账号 | 密码 |
-|---|---|---|
-| 教师 | `teacher01` | `Coursematch-Dev-2026` |
-| 学生 | `20260001` / `20260002` | `Coursematch-Dev-2026` |
+统一密码：`Coursematch-Dev-2026`。`npm run seed` 默认 `SEED_MODE=accounts`（见 `.env.example`）。
 
-教师可见草稿与已发布活动；学生仅可见已发布且自己在名单内的活动。
+| 角色 | 账号 | 说明 |
+|---|---|---|
+| 教师 | `teacher_blank` | 空账号，工作台无选课任务，从零新建 |
+| 教师 | `teacher_ready` | 已配置两条选课（需 `SEED_MODE=ready` 或 `full`） |
+| 教师 | `teacher01` | 兼容；`SEED_MODE=full` 时含旧版三条示例 |
+| 学生 | `20260001` / `20260002` | 可登录志愿填报与我的结果 |
+
+学生仅可见已发布且自己在名单内的选课；每位教师仅能看到自己创建的选课任务。
 
 ### 测试
 

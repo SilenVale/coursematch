@@ -8,7 +8,8 @@
  * 按钮禁用只是提示（ARCHITECTURE「页面上的按钮状态只是提示，授权以服务端为准」）。
  */
 import { useCallback, useEffect, useState } from "react";
-import type { ActivitySummary, ActivityView } from "@coursematch/shared";
+import { useOutletContext } from "react-router-dom";
+import type { ActivityView } from "@coursematch/shared";
 import { ActivityBasicsForm } from "./ActivityBasicsForm";
 import { PublishPanel } from "./PublishPanel";
 import { RosterPanel } from "./RosterPanel";
@@ -17,7 +18,6 @@ import {
   ApiError,
   createActivity,
   getActivity,
-  listActivities,
   listParticipants,
   listTopics,
 } from "./configApi";
@@ -27,7 +27,6 @@ import {
   FieldErrorText,
   LIFECYCLE_LABEL,
   PHASE_LABEL,
-  formatBeijing,
   fromDateTimeLocal,
   toApiError,
 } from "./configUi";
@@ -51,7 +50,7 @@ function defaultDraft() {
   };
 }
 
-function CreateActivityForm({
+export function CreateActivityForm({
   onCreated,
   onCancel,
 }: {
@@ -86,7 +85,7 @@ function CreateActivityForm({
 
   return (
     <div className="cm-create">
-      <h2>新建活动草稿</h2>
+      <h2>新建选课任务</h2>
       <p className="cm-muted">
         草稿阶段可以自由修改。发布后，标题、时间、志愿数和名单都会锁定。
       </p>
@@ -162,12 +161,10 @@ function CreateActivityForm({
   );
 }
 
-export function ActivityConfigPage() {
-  const [items, setItems] = useState<ActivitySummary[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
-  const [listError, setListError] = useState<ApiError | null>(null);
+type CourseOutlet = { activityId: string };
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function ActivityConfigurePage() {
+  const { activityId } = useOutletContext<CourseOutlet>();
   const [activity, setActivity] = useState<ActivityView | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<ApiError | null>(null);
@@ -175,28 +172,6 @@ export function ActivityConfigPage() {
   const [participantCount, setParticipantCount] = useState<number | null>(null);
   const [topicCount, setTopicCount] = useState<number | null>(null);
   const [topicPending, setTopicPending] = useState(false);
-
-  const [creating, setCreating] = useState(false);
-  const [pageError, setPageError] = useState<ApiError | null>(null);
-
-  const loadActivities = useCallback(async () => {
-    setLoadingList(true);
-    setListError(null);
-    try {
-      const res = await listActivities();
-      setItems(res.items);
-      return res.items;
-    } catch (err) {
-      setListError(toApiError(err));
-      return [];
-    } finally {
-      setLoadingList(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadActivities();
-  }, [loadActivities]);
 
   /** 发布前检查需要名单人数与题目数，这里单独取一次轻量数据。 */
   const loadCounts = useCallback(async (activityId: string) => {
@@ -221,53 +196,38 @@ export function ActivityConfigPage() {
     }
   }, []);
 
-  const selectActivity = useCallback(
-    async (activityId: string) => {
-      setSelectedId(activityId);
-      setLoadingDetail(true);
-      setDetailError(null);
-      setParticipantCount(null);
-      setTopicCount(null);
-      setTopicPending(false);
-      try {
-        const detail = await getActivity(activityId);
-        setActivity(detail);
-        await loadCounts(activityId);
-      } catch (err) {
-        setDetailError(toApiError(err));
-        setActivity(null);
-      } finally {
-        setLoadingDetail(false);
-      }
-    },
-    [loadCounts],
-  );
-
-  // 首次进入时自动选中第一个活动，避免空页面。
-  useEffect(() => {
-    if (!selectedId && items.length > 0 && !creating) {
-      void selectActivity(items[0].activityId);
+  const loadDetail = useCallback(async () => {
+    setLoadingDetail(true);
+    setDetailError(null);
+    setParticipantCount(null);
+    setTopicCount(null);
+    setTopicPending(false);
+    try {
+      const detail = await getActivity(activityId);
+      setActivity(detail);
+      await loadCounts(activityId);
+    } catch (err) {
+      setDetailError(toApiError(err));
+      setActivity(null);
+    } finally {
+      setLoadingDetail(false);
     }
-  }, [items, selectedId, creating, selectActivity]);
+  }, [activityId, loadCounts]);
+
+  useEffect(() => {
+    void loadDetail();
+  }, [loadDetail]);
 
   function handleSaved(next: ActivityView) {
     setActivity(next);
-    void loadActivities();
   }
 
   function handleVersionChange(configVersion: number) {
     setActivity((prev) => (prev ? { ...prev, configVersion } : prev));
   }
 
-  async function handleCreated(created: ActivityView) {
-    setCreating(false);
-    await loadActivities();
-    await selectActivity(created.activityId);
-  }
-
   async function handleVoided() {
-    if (selectedId) await selectActivity(selectedId);
-    await loadActivities();
+    await loadDetail();
   }
 
   const canEditBasics = activity?.lifecycle === "DRAFT";
@@ -275,128 +235,67 @@ export function ActivityConfigPage() {
     activity?.lifecycle === "DRAFT" || activity?.lifecycle === "PUBLISHED";
 
   return (
-    <div className="cm-config">
-      <header className="cm-page-head">
-        <div>
-          <h1>教师 · 活动配置</h1>
-          <p className="cm-muted">
-            创建草稿、导入五列名单、配置题目与名额、发布或作废活动。
-          </p>
-        </div>
-        <button type="button" onClick={() => setCreating(true)} disabled={creating}>
-          新建活动
-        </button>
-      </header>
+    <div className="cm-config cm-main">
+      {loadingDetail && <p className="cm-muted">加载中…</p>}
+      <ErrorBanner error={detailError} onDismiss={() => setDetailError(null)} />
 
-      <ErrorBanner error={pageError} onDismiss={() => setPageError(null)} />
+      {!loadingDetail && activity && (
+        <>
+          <div className="cm-summary">
+            <div>
+              <h2>课程设置</h2>
+              <p className="cm-muted">名单 CSV、题目名额、发布或作废。</p>
+            </div>
+            <div className="cm-summary-meta">
+              <Badge tone={activity.lifecycle === "DRAFT" ? "draft" : "published"}>
+                {LIFECYCLE_LABEL[activity.lifecycle]}
+              </Badge>
+              {PHASE_LABEL[activity.phase] !== LIFECYCLE_LABEL[activity.lifecycle] && (
+                <span className="cm-muted">{PHASE_LABEL[activity.phase]}</span>
+              )}
+              <span className="cm-muted">配置 v{activity.configVersion}</span>
+            </div>
+          </div>
 
-      <div className="cm-layout">
-        <aside className="cm-sidebar">
-          <h2>我的活动</h2>
-          {loadingList && <p className="cm-muted">加载中…</p>}
-          <ErrorBanner error={listError} onDismiss={() => setListError(null)} />
-          {!loadingList && items.length === 0 && (
-            <p className="cm-empty">还没有活动。点「新建活动」创建第一个草稿。</p>
-          )}
-          <ul className="cm-activity-list">
-            {items.map((item) => (
-              <li key={item.activityId}>
-                <button
-                  type="button"
-                  className={item.activityId === selectedId ? "cm-activity active" : "cm-activity"}
-                  onClick={() => void selectActivity(item.activityId)}
-                >
-                  <span className="cm-activity-title">{item.title}</span>
-                  <span className="cm-activity-meta">
-                    <Badge tone={item.lifecycle === "DRAFT" ? "draft" : "published"}>
-                      {LIFECYCLE_LABEL[item.lifecycle]}
-                    </Badge>
-                    {PHASE_LABEL[item.phase] !== LIFECYCLE_LABEL[item.lifecycle] && (
-                      <span className="cm-muted">{PHASE_LABEL[item.phase]}</span>
-                    )}
-                  </span>
-                  <span className="cm-activity-time">
-                    截止 {formatBeijing(item.deadlineAt)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </aside>
+          <ActivityBasicsForm
+            activity={activity}
+            canEditTitle={canEditBasics}
+            canEditDescription={canEditDescription}
+            onSaved={handleSaved}
+          />
 
-        <main className="cm-main">
-          {creating && (
-            <CreateActivityForm
-              onCreated={(created) => void handleCreated(created)}
-              onCancel={() => setCreating(false)}
-            />
-          )}
+          <RosterPanel
+            activityId={activity.activityId}
+            configVersion={activity.configVersion}
+            editable={canEditBasics}
+            onVersionChange={handleVersionChange}
+            onChanged={() => void loadCounts(activity.activityId)}
+          />
 
-          {!creating && loadingDetail && <p className="cm-muted">加载活动…</p>}
-          <ErrorBanner error={detailError} onDismiss={() => setDetailError(null)} />
+          <TopicPanel
+            activityId={activity.activityId}
+            configVersion={activity.configVersion}
+            editable={canEditBasics}
+            onVersionChange={handleVersionChange}
+            onTopicsChanged={(count) => {
+              setTopicCount(count);
+              setTopicPending(false);
+            }}
+          />
 
-          {!creating && !loadingDetail && !activity && !detailError && (
-            <p className="cm-empty">从左侧选择一个活动，或新建一个草稿。</p>
-          )}
-
-          {!creating && activity && (
-            <>
-              <div className="cm-summary">
-                <div>
-                  <h2>{activity.title}</h2>
-                  <p className="cm-muted">{activity.description || "（未填写活动说明）"}</p>
-                </div>
-                <div className="cm-summary-meta">
-                  <Badge tone={activity.lifecycle === "DRAFT" ? "draft" : "published"}>
-                    {LIFECYCLE_LABEL[activity.lifecycle]}
-                  </Badge>
-                  {/* lifecycle 与 phase 同名时（草稿/已作废/已关闭）不重复显示。 */}
-                  {PHASE_LABEL[activity.phase] !== LIFECYCLE_LABEL[activity.lifecycle] && (
-                    <span className="cm-muted">{PHASE_LABEL[activity.phase]}</span>
-                  )}
-                  <span className="cm-muted">规则 {activity.ruleVersion}</span>
-                  <span className="cm-muted">配置 v{activity.configVersion}</span>
-                </div>
-              </div>
-
-              <ActivityBasicsForm
-                activity={activity}
-                canEditTitle={canEditBasics}
-                canEditDescription={canEditDescription}
-                onSaved={handleSaved}
-              />
-
-              <RosterPanel
-                activityId={activity.activityId}
-                configVersion={activity.configVersion}
-                editable={canEditBasics}
-                onVersionChange={handleVersionChange}
-                onChanged={() => void loadCounts(activity.activityId)}
-              />
-
-              <TopicPanel
-                activityId={activity.activityId}
-                configVersion={activity.configVersion}
-                editable={canEditBasics}
-                onVersionChange={handleVersionChange}
-                onTopicsChanged={(count) => {
-                  setTopicCount(count);
-                  setTopicPending(false);
-                }}
-              />
-
-              <PublishPanel
-                activity={activity}
-                participantCount={participantCount}
-                topicCount={topicCount}
-                topicPending={topicPending}
-                onPublished={handleSaved}
-                onVoided={() => void handleVoided()}
-              />
-            </>
-          )}
-        </main>
-      </div>
+          <PublishPanel
+            activity={activity}
+            participantCount={participantCount}
+            topicCount={topicCount}
+            topicPending={topicPending}
+            onPublished={handleSaved}
+            onVoided={() => void handleVoided()}
+          />
+        </>
+      )}
     </div>
   );
 }
+
+/** @deprecated 使用 ActivityConfigurePage；保留别名避免旧引用报错 */
+export const ActivityConfigPage = ActivityConfigurePage;
