@@ -15,6 +15,7 @@ import { registerCsrfProtection } from "./plugins/csrf.js";
 import { authRoutes } from "./routes/auth.js";
 import { activityConfigRoutes } from "./routes/activities/config.js";
 import { freezeAllocationRoutes } from "./routes/activities/freeze-allocation.js";
+import { activityPreferenceRoutes } from "./routes/activities/preferences.js";
 import { activityReadRoutes } from "./routes/activities/read.js";
 import { activityResultsRoutes } from "./routes/activities/results.js";
 import { activityStubRoutes } from "./routes/activities/stubs.js";
@@ -44,6 +45,8 @@ export async function buildApp() {
   await app.register(activityConfigRoutes);
   await app.register(freezeAllocationRoutes);
   await app.register(activityResultsRoutes);
+  // M3 必须在 stubs 之前注册：stub 里同名路由会让 Fastify 抛重复路由。
+  await app.register(activityPreferenceRoutes);
   await app.register(activityStubRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));

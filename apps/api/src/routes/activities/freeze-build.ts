@@ -119,8 +119,13 @@ export async function buildFrozenInput(
     version: number;
     submitted_at: Date;
   }>(
-    `SELECT participant_id, topic_ids, version, submitted_at
-     FROM preference_submission WHERE activity_id = $1`,
+    `SELECT participant_id,
+            array_agg(topic_id ORDER BY rank) AS topic_ids,
+            MAX(version)::int AS version,
+            MAX(submitted_at) AS submitted_at
+     FROM preference
+     WHERE activity_id = $1
+     GROUP BY participant_id`,
     [activity.id],
   );
 

@@ -23,6 +23,7 @@ async function main() {
   await pool.query("DELETE FROM allocation_result");
   await pool.query("DELETE FROM allocation_batch");
   await pool.query("DELETE FROM freeze_snapshot");
+  await pool.query("DELETE FROM preference");
   await pool.query("DELETE FROM preference_submission");
   await pool.query("DELETE FROM topic_eligible_participant");
   await pool.query("DELETE FROM topic");
@@ -93,18 +94,11 @@ async function main() {
   );
 
   await pool.query(
-    `INSERT INTO preference_submission (id, activity_id, participant_id, topic_ids, version, submitted_at)
-     VALUES ($1, $2, $3, $4, 1, NOW()),
-            ($5, $2, $6, $7, 1, NOW())`,
-    [
-      randomUUID(),
-      activityClosedDemo,
-      closedPartA,
-      [topicJia],
-      randomUUID(),
-      closedPartB,
-      [topicYi, topicJia],
-    ],
+    `INSERT INTO preference (activity_id, participant_id, rank, topic_id, version, submitted_at)
+     VALUES ($1, $2, 1, $3, 1, NOW()),
+            ($1, $4, 1, $5, 1, NOW()),
+            ($1, $4, 2, $3, 1, NOW())`,
+    [activityClosedDemo, closedPartA, topicJia, closedPartB, topicYi],
   );
 
   console.log("Seed complete.");

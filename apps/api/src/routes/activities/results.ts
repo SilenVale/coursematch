@@ -4,6 +4,7 @@ import type {
   AllocationView,
   CloseView,
   EvidenceView,
+  FrozenInput,
   Lifecycle,
   OperationAction,
   OperationEvidence,
@@ -148,7 +149,7 @@ export const activityResultsRoutes: FastifyPluginAsync = async (app) => {
         id: string;
         activity_id: string;
         frozen_at: Date;
-        input: EvidenceView["snapshot"];
+        input: FrozenInput;
       }>(`SELECT id, activity_id, frozen_at, input FROM freeze_snapshot WHERE activity_id = $1`, [
         activity.id,
       ]);
@@ -209,7 +210,7 @@ export const activityResultsRoutes: FastifyPluginAsync = async (app) => {
                 activityId: snap[0].activity_id,
                 inputFormatVersion: 1,
                 frozenAt: snap[0].frozen_at.toISOString(),
-                input: snap[0].input as NonNullable<EvidenceView["snapshot"]>["input"],
+                input: snap[0].input,
               }
             : null,
         batch:

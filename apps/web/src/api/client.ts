@@ -1,4 +1,4 @@
-import type { ActorView, BusinessApiFailure } from "@coursematch/shared";
+import type { ActorView, ActivitySummary, BusinessApiFailure } from "@coursematch/shared";
 
 const JSON_HEADER = { "Content-Type": "application/json" };
 const REQUEST_HEADER = { "X-CourseMatch-Request": "1" };
@@ -40,7 +40,7 @@ export async function apiLogout() {
 
 export async function apiActivities() {
   const list = await fetch("/api/activities", { credentials: "include" });
-  return parse<{ data: { items: { activityId: string; title: string; lifecycle: string }[] } }>(
-    list,
-  );
+  // 返回类型按契约用完整的 ActivitySummary：调用方需要 phase / startAt / deadlineAt，
+  // 之前只声明了三个字段，导致教师冻结页与 M4 的页面编译不过。
+  return parse<{ data: { items: ActivitySummary[] } }>(list);
 }
