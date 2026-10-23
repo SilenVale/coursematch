@@ -1,6 +1,9 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ActorView } from "@coursematch/shared";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import "dotenv/config";
 
@@ -23,7 +26,10 @@ import { demoRoleCheck } from "./routes/role-guard.js";
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
-  const webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
+  const webOrigin =
+    process.env.WEB_ORIGIN ??
+    process.env.RENDER_EXTERNAL_URL ??
+    "http://localhost:5173";
 
   await app.register(cors, {
     origin: webOrigin,
@@ -50,6 +56,26 @@ export async function buildApp() {
   await app.register(activityStubRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));
+
+  const serveWeb =
+    process.env.SERVE_WEB === "1" ||
+    (process.env.NODE_ENV === "production" && process.env.SERVE_WEB !== "0");
+  if (serveWeb) {
+    const apiDir = dirname(fileURLToPath(import.meta.url));
+    const webRoot = join(apiDir, "../../web/dist");
+    await app.register(fastifyStatic, {
+      root: webRoot,
+      wildcard: false,
+    });
+    app.setNotFoundHandler((request, reply) => {
+      if (request.method === "GET" && !request.url.startsWith("/api")) {
+        return reply.sendFile("index.html");
+      }
+      return reply.code(404).send({
+        error: { code: "RESOURCE_NOT_FOUND", message: "Not Found" },
+      });
+    });
+  }
 
   return app;
 }
