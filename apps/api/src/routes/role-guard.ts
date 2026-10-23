@@ -31,7 +31,7 @@ export async function demoRoleCheck(req: FastifyRequest, reply: FastifyReply) {
     req.url.includes("/publish") ||
     req.url.includes("/freeze") ||
     req.url.includes("/allocation") ||
-    req.url.includes("/results") ||
+    (req.url.includes("/results") && !req.url.includes("/results/me")) ||
     req.url.includes("/evidence") ||
     req.url.includes("/void") ||
     req.url.includes("/close") ||

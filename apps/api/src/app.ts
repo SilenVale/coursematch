@@ -14,7 +14,9 @@ import { loadActorBySession, sessionCookieName } from "./lib/session.js";
 import { registerCsrfProtection } from "./plugins/csrf.js";
 import { authRoutes } from "./routes/auth.js";
 import { activityConfigRoutes } from "./routes/activities/config.js";
+import { freezeAllocationRoutes } from "./routes/activities/freeze-allocation.js";
 import { activityReadRoutes } from "./routes/activities/read.js";
+import { activityResultsRoutes } from "./routes/activities/results.js";
 import { activityStubRoutes } from "./routes/activities/stubs.js";
 import { demoRoleCheck } from "./routes/role-guard.js";
 
@@ -40,6 +42,8 @@ export async function buildApp() {
   await app.register(authRoutes);
   await app.register(activityReadRoutes);
   await app.register(activityConfigRoutes);
+  await app.register(freezeAllocationRoutes);
+  await app.register(activityResultsRoutes);
   await app.register(activityStubRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));

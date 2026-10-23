@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@coursematch/allocation": "*",
     "@coursematch/shared": "*",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.1",
