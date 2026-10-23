@@ -10,10 +10,8 @@ function notImplemented(reply: { code: (n: number) => { send: (b: unknown) => un
   return reply.code(status).send(body);
 }
 
-/** M2 已实现的路由见 `config.ts`，此处仅保留未落地模块的占位。 */
+/** M2 已实现的路由见 `config.ts`，M3 已实现的路由见 `preferences.ts`，此处仅保留未落地模块的占位。 */
 const stubPaths = [
-  "GET /api/activities/:activityId/preferences/me",
-  "PUT /api/activities/:activityId/preferences/me",
   "GET /api/activities/:activityId/preferences",
   "GET /api/activities/:activityId/freeze",
   "POST /api/activities/:activityId/freeze",
@@ -25,12 +23,6 @@ const stubPaths = [
 ] as const;
 
 export const activityStubRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/api/activities/:activityId/preferences/me", async (_req, reply) =>
-    notImplemented(reply),
-  );
-  app.put("/api/activities/:activityId/preferences/me", async (_req, reply) =>
-    notImplemented(reply),
-  );
   app.get("/api/activities/:activityId/preferences", async (_req, reply) =>
     notImplemented(reply),
   );
