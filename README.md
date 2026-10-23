@@ -10,6 +10,8 @@
 
 **第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md) · 勾选表：[docs/V1_CHECKLIST.md](docs/V1_CHECKLIST.md) · 联调步骤：[docs/testing/v1-e2e-runbook.md](docs/testing/v1-e2e-runbook.md)
 
+**Dev 公网环境（Render，HTTPS）：** 部署说明见 [docs/deploy/dev-render.md](docs/deploy/dev-render.md)。合并 `render.yaml` 后，在 Render 用 Blueprint 一键创建；**演示 URL 待填入本行。**
+
 **组员任务卡与 Agent 开场词：** [docs/roles/README.md](docs/roles/README.md)、[docs/AGENT_START.md](docs/AGENT_START.md)。
 
 ## 本地启动
