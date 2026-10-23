@@ -5,7 +5,7 @@ import { apiLogout, apiMe } from "./api/client";
 import { LoginPage } from "./pages/Login";
 import { ActivityConfigPage } from "./pages/teacher/ActivityConfigPage";
 import { FreezeAllocationPlaceholder } from "./pages/teacher/FreezeAllocationPlaceholder";
-import { PreferencesPlaceholder } from "./pages/student/PreferencesPlaceholder";
+import { PreferencesPage } from "./pages/student/PreferencesPage";
 import { ResultsPlaceholder } from "./pages/student/ResultsPlaceholder";
 import { HomePage } from "./pages/Home";
 
@@ -99,7 +99,7 @@ export function App() {
           path="/student/preferences"
           element={
             actor?.role === "STUDENT" ? (
-              <PreferencesPlaceholder />
+              <PreferencesPage />
             ) : (
               <Navigate to="/" replace />
             )
