@@ -5,6 +5,7 @@
 databases:
   - name: coursematch-db
     plan: free
+    region: oregon
     databaseName: coursematch
     user: coursematch
 
@@ -13,7 +14,7 @@ services:
     name: coursematch-dev
     runtime: docker
     plan: free
-    region: singapore
+    region: oregon
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -29,4 +30,4 @@ services:
           name: coursematch-db
           property: connectionString
       - key: WEB_ORIGIN
-        sync: false
+        value: https://coursematch-dev.onrender.com

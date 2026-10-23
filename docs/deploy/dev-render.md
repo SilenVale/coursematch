@@ -17,6 +17,8 @@
    （若未手设，可依赖 `RENDER_EXTERNAL_URL`；建议仍显式设 `WEB_ORIGIN` 与公网 URL 一致。）
 5. 首次部署完成后访问公网 URL，使用 README 种子账号登录。
 
+**区域：** 免费档 Postgres 默认在 **Oregon**；Web 服务须与数据库 **同区域**（`render.yaml` 中均为 `oregon`），否则 Blueprint 注入的内网 `DATABASE_URL` 会 `ENOTFOUND`。若 Web 误建在 Singapore，可在环境变量中改为数据库的 **External Database URL**，或删 Web 后按 Blueprint 在 Oregon 重建。
+
 ## 环境变量
 
 | 变量 | 说明 |
