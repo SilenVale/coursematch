@@ -28,6 +28,7 @@ import type {
   VoidView,
 } from "@coursematch/shared";
 import { pool } from "../../db/pool.js";
+import { provisionAccountsForActivity } from "../../lib/provision-student-accounts.js";
 import { fail, ok } from "../../lib/response.js";
 import {
   buildRosterPreview,
@@ -589,6 +590,25 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
 
     return ok({ items });
   });
+
+  app.post<{ Params: { activityId: string } }>(
+    "/api/activities/:activityId/participants/provision-accounts",
+    async (req, reply) => {
+      if (req.actor?.role !== "TEACHER") {
+        const { status, body } = fail("ROLE_FORBIDDEN", "仅教师可操作", 403);
+        return reply.code(status).send(body);
+      }
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+
+      const result = await provisionAccountsForActivity(pool, row.id);
+      return ok({
+        provisionedCount: result.provisionedCount,
+        identifiers: result.identifiers,
+        defaultPasswordHint: "Coursematch-Dev-2026",
+      });
+    },
+  );
 
   // ---------------------------------------------------------------- 名单预览
   app.post<{ Params: { activityId: string } }>(
