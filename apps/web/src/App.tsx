@@ -6,7 +6,7 @@ import { LoginPage } from "./pages/Login";
 import { ActivityConfigPage } from "./pages/teacher/ActivityConfigPage";
 import { FreezeAllocationPage } from "./pages/teacher/FreezeAllocationPage";
 import { PreferencesPage } from "./pages/student/PreferencesPage";
-import { ResultsPlaceholder } from "./pages/student/ResultsPlaceholder";
+import { ResultsPage } from "./pages/student/ResultsPage";
 import { HomePage } from "./pages/Home";
 
 export function App() {
@@ -109,7 +109,7 @@ export function App() {
           path="/student/results"
           element={
             actor?.role === "STUDENT" ? (
-              <ResultsPlaceholder />
+              <ResultsPage />
             ) : (
               <Navigate to="/" replace />
             )

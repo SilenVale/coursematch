@@ -8,11 +8,13 @@ import type {
   Lifecycle,
   OperationAction,
   OperationEvidence,
+  PersonalResultView,
   ReasonInput,
   ResultFields,
   TeacherResultView,
   TeacherResultsView,
 } from "@coursematch/shared";
+import { buildPersonalResultView } from "./results-me-map.js";
 import { pool } from "../../db/pool.js";
 import { fail, ok } from "../../lib/response.js";
 import { insertOperationLog } from "./freeze-build.js";
@@ -62,16 +64,84 @@ async function loadAllocationView(activityId: string): Promise<AllocationView | 
   };
 }
 
+const PARTICIPANT_SQL = `SELECT id FROM participant
+                         WHERE activity_id = $1 AND student_profile_id = $2`;
+
+async function findStudentParticipantId(
+  activityId: string,
+  studentProfileId: string,
+): Promise<string | null> {
+  const { rows } = await pool.query<{ id: string }>(PARTICIPANT_SQL, [
+    activityId,
+    studentProfileId,
+  ]);
+  return rows[0]?.id ?? null;
+}
+
 export const activityResultsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { activityId: string } }>(
     "/api/activities/:activityId/results/me",
-    async (_req, reply) => {
-      const { status, body } = fail(
-        "INTERNAL_ERROR",
-        "学生本人结果由刘家铭实现，见 docs/roles/刘家铭-M3-志愿与学生结果.md",
-        501,
+    async (req, reply) => {
+      if (!req.actor) {
+        const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
+        return reply.code(status).send(body);
+      }
+      if (req.actor.role !== "STUDENT") {
+        const { status, body } = fail("ROLE_FORBIDDEN", "当前角色无权查看学生结果", 403);
+        return reply.code(status).send(body);
+      }
+      const profileId = req.actor.studentProfileId;
+      if (!profileId) {
+        const { status, body } = fail("UNAUTHENTICATED", "会话学生信息缺失", 401);
+        return reply.code(status).send(body);
+      }
+
+      const { rows: activityRows } = await pool.query<{ lifecycle: Lifecycle }>(
+        `SELECT lifecycle FROM activity WHERE id = $1`,
+        [req.params.activityId],
       );
-      return reply.code(status).send(body);
+      const activity = activityRows[0];
+      if (!activity || activity.lifecycle === "DRAFT") {
+        const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
+        return reply.code(status).send(body);
+      }
+
+      const participantId = await findStudentParticipantId(req.params.activityId, profileId);
+      if (!participantId) {
+        const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
+        return reply.code(status).send(body);
+      }
+
+      const allocation = await loadAllocationView(req.params.activityId);
+      if (!allocation) {
+        const pending: PersonalResultView = { preparation: "PENDING" };
+        return ok(pending);
+      }
+
+      const { rows } = await pool.query<{
+        status: string;
+        topic_id: string | null;
+        matched_rank: number | null;
+        lottery_number: number;
+        rounds: ResultFields["rounds"];
+      }>(
+        `SELECT status, topic_id, matched_rank, lottery_number, rounds
+         FROM allocation_result
+         WHERE batch_id = $1 AND participant_id = $2`,
+        [allocation.batchId, participantId],
+      );
+
+      const row = rows[0];
+      if (!row) {
+        const { status, body } = fail(
+          "INTERNAL_ERROR",
+          "分配结果不完整，请联系教师或管理员",
+          500,
+        );
+        return reply.code(status).send(body);
+      }
+
+      return ok(buildPersonalResultView(allocation.executedAt, row));
     },
   );
 

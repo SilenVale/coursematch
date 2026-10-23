@@ -2,9 +2,15 @@
  * 刘家铭 · M3 学生页面的接口封装。
  *
  * 不放进 `apps/web/src/api/client.ts`：那个文件是全组共用的，改动会和别人冲突。
- * 这里只包学生这条线用到的四个调用，统一带 CSRF 头并保留 error.code。
+ * 这里只包学生这条线用到的调用，统一带 CSRF 头并保留 error.code。
  */
-import type { ActivitySummary, ActivityView, PreferenceView, TopicListView } from "@coursematch/shared";
+import type {
+  ActivitySummary,
+  ActivityView,
+  PersonalResultView,
+  PreferenceView,
+  TopicListView,
+} from "@coursematch/shared";
 
 const REQUEST_HEADER = { "X-CourseMatch-Request": "1" };
 
@@ -69,4 +75,11 @@ export async function saveMyPreferences(
     body: JSON.stringify({ topicIds, expectedVersion }),
   });
   return parse<PreferenceView>(res);
+}
+
+export async function fetchMyResult(activityId: string): Promise<PersonalResultView> {
+  const res = await fetch(`/api/activities/${activityId}/results/me`, {
+    credentials: "include",
+  });
+  return parse<PersonalResultView>(res);
 }
