@@ -4,7 +4,21 @@ const JSON_HEADER = { "Content-Type": "application/json" };
 const REQUEST_HEADER = { "X-CourseMatch-Request": "1" };
 
 async function parse<T>(res: Response): Promise<T> {
-  const body = await res.json();
+  const text = await res.text();
+  let body: unknown;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    const waking =
+      res.status >= 502 ||
+      text.trimStart().startsWith("<!") ||
+      text.includes("<!DOCTYPE");
+    throw new Error(
+      waking
+        ? "服务正在唤醒或部署中，请等约 30 秒后重试"
+        : "服务返回异常，请稍后重试",
+    );
+  }
   if (!res.ok) {
     const err = body as BusinessApiFailure;
     throw new Error(err.error?.message ?? res.statusText);
