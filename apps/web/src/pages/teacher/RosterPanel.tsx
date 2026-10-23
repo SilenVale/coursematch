@@ -8,7 +8,13 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import type { ParticipantQuery, ParticipantView, RosterPreview } from "@coursematch/shared";
-import { ApiError, listParticipants, previewRoster, replaceRoster } from "./configApi";
+import {
+  ApiError,
+  listParticipants,
+  previewRoster,
+  provisionParticipantAccounts,
+  replaceRoster,
+} from "./configApi";
 import { Badge, ErrorBanner, formatBeijing, toApiError } from "./configUi";
 
 export function RosterPanel({
@@ -32,7 +38,7 @@ export function RosterPanel({
   const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState("");
   const [preview, setPreview] = useState<RosterPreview | null>(null);
-  const [busy, setBusy] = useState<"preview" | "replace" | null>(null);
+  const [busy, setBusy] = useState<"preview" | "replace" | "provision" | null>(null);
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [notice, setNotice] = useState("");
 
@@ -115,6 +121,26 @@ export function RosterPanel({
   }
 
   const accountsReady = participants.filter((p) => p.accountConfigured).length;
+  const accountsPending = participants.length - accountsReady;
+
+  async function handleProvisionAccounts() {
+    setBusy("provision");
+    setImportError(null);
+    setNotice("");
+    try {
+      const result = await provisionParticipantAccounts(activityId);
+      setNotice(
+        result.provisionedCount > 0
+          ? `已为 ${result.provisionedCount} 人开通账号（学号登录，初始密码 ${result.defaultPasswordHint}）：${result.identifiers.join("、")}`
+          : "名单中的学生均已开通账号，无需操作。",
+      );
+      await loadList();
+    } catch (err) {
+      setImportError(toApiError(err));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <section className="cm-panel">
@@ -124,6 +150,19 @@ export function RosterPanel({
           {loadingList ? "加载中…" : `共 ${participants.length} 人，其中 ${accountsReady} 人已开通账号`}
         </span>
       </header>
+
+      {accountsPending > 0 && (
+        <div className="cm-actions" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void handleProvisionAccounts()}
+          >
+            {busy === "provision" ? "开通中…" : `为 ${accountsPending} 名未开通学生创建登录账号`}
+          </button>
+          <span className="cm-muted">账号为学号，初始密码见 README。</span>
+        </div>
+      )}
 
       <ErrorBanner error={listError} onDismiss={() => setListError(null)} />
 

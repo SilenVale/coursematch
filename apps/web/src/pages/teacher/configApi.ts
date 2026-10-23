@@ -183,6 +183,19 @@ export function replaceRoster(
   );
 }
 
+/** 为本轮名单里尚未建号的学生创建登录账号（学号即账号，默认密码见 README）。 */
+export function provisionParticipantAccounts(activityId: string): Promise<{
+  provisionedCount: number;
+  identifiers: string[];
+  defaultPasswordHint: string;
+}> {
+  return request(`/api/activities/${activityId}/participants/provision-accounts`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({}),
+  });
+}
+
 // ------------------------------------------------------------------ 题目（第二批）
 
 export function listTopics(
