@@ -190,39 +190,64 @@
 
 ## 六、已知的其他模块问题（与 M2 无关，但影响整体验收）
 
-| 编号 | 现象 | 归属 | 建议等级 |
-|---|---|---|---|
-| EXT-01 | `npx tsc -p apps/api` 报 `results.ts:212` TS2352，API 无法构建 | M4/M5（PR #19） | P0（阻塞构建） |
-| EXT-02 | `npm run build -w @coursematch/web` 报 `FreezeAllocationPage.tsx:24` TS2345，Web 无法构建 | M4/M5（PR #19） | P0（阻塞构建） |
-| EXT-03 | 根 `npm test` 只跑 `packages/allocation`，不检查 API 类型，掩盖 EXT-01/02 | 共同底座 | P1 |
+> **状态更新（2026-10-24）：以下三项均已修复**，保留记录以便追溯。
 
-> 说明：EXT-01/02 会使 README 中的 `npm run build` 失败，影响 V1 优秀线 #1「干净环境按 README 启动」。建议在合并 M2 相关 PR 前修复。
+| 编号 | 现象 | 归属 | 建议等级 | 状态 |
+|---|---|---|---|---|
+| EXT-01 | `npx tsc -p apps/api` 报 `results.ts:212` TS2352，API 无法构建 | M4/M5（PR #19） | P0（阻塞构建） | ✅ 已修复（PR #22） |
+| EXT-02 | `npm run build -w @coursematch/web` 报 `FreezeAllocationPage.tsx:24` TS2345，Web 无法构建 | M4/M5（PR #19） | P0（阻塞构建） | ✅ 已修复（PR #22） |
+| EXT-03 | 根 `npm test` 只跑 `packages/allocation`，不检查 API 类型，掩盖 EXT-01/02 | 共同底座 | P1 | ✅ 已修复（PR #23） |
+
+修复方式：
+
+- EXT-01：`results.ts` 中 `freeze_snapshot.input` 的行类型由 `EvidenceView["snapshot"]` 改为 `FrozenInput`（该列本就是 `FrozenInput` 的 JSON 存储）；
+- EXT-02：`client.ts` 的 `apiActivities` 返回类型由「三个字段」改为完整的 `ActivitySummary`（服务端本就返回 `phase` / `startAt` / `deadlineAt`）；
+- EXT-03：根 `test` 脚本改为 `allocation && api`。
+
+**当前状态：** `npm run build` 通过；`npm test` 54 条通过（allocation 2 + API 52）。
+
+> 另：`docs/testing/m2-test-cases.md` 曾指出 PR #25 的 CSS 批量替换会误伤 M2 的 `#fff8e6` / `#fff3e0` / `#fffdf7` 三个六位色，该问题已在 `525f8fc` 修复，并在 CSS 顶部加了注释提醒。
 
 ---
 
 ## 七、复现方式
 
-### 单元测试
+### 单元测试（无需数据库）
 
 ```bash
 npm install
 npm run build -w @coursematch/shared
 npm run build -w @coursematch/allocation
-npx vitest run --root apps/api
+npm test
 ```
 
-预期：`Tests 41 passed (41)`。
+预期：allocation 2 条 + API 52 条通过；集成测试文件显示为 skipped（无 `DATABASE_URL` 时自动跳过）。
 
-### 接口用例
+### 接口集成测试（需 PostgreSQL）
 
-本表 47 条用例的执行脚本目前为临时脚本，未纳入仓库。原因：需要 PostgreSQL 实例，仓库尚未约定测试库方案。
+依据 [api-integration-tests.md](./api-integration-tests.md) 的决议采用方案 A（真实 PostgreSQL）：
 
-**建议后续落点**（需负责人确认）：
+```bash
+docker compose up -d                      # 启动 postgres:16-alpine
+set -a && source .env && set +a           # 提供 DATABASE_URL（Windows 见下）
+npm run test:api:integration
+```
 
-- 方案 A：增加 `docker-compose.test.yml`，在 CI/本地用 `npm run test:api` 跑接口测试；
-- 方案 B：用 `pglite` 作为嵌入式测试库，无需外部依赖，适合课程环境。
+预期：`Tests 47 passed (47)`。
 
-方案 B 更轻量，已在本轮验证中实际跑通（PGlite + 真实 pg 驱动 + 真实 `buildApp()`）。
+**Windows（PowerShell）：**
+
+```powershell
+$env:DATABASE_URL = "postgres://coursematch:coursematch@localhost:5432/coursematch"
+npm run test:api:integration
+```
+
+**说明：**
+
+- 测试文件为 `apps/api/src/routes/activities/config.integration.test.ts`，用例编号与本表 `TC-M2-001` ~ `TC-M2-047` 一一对应；
+- 套件在 `beforeAll` 中依序应用全部迁移，并清空业务表，**可重复运行**；
+- 未设置 `DATABASE_URL` 时 `npm run test:api:integration` 会直接报错退出（避免「跳过」被误读为「通过」）；
+- 未设置 `DATABASE_URL` 时 `npm test` 会把该文件标记为 skipped，不影响其余测试。
 
 ---
 

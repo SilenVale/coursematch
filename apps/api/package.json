@@ -9,7 +9,8 @@
     "start": "node dist/index.js",
     "migrate": "tsx src/db/migrate.ts",
     "seed": "tsx src/db/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "node -e \"process.env.DATABASE_URL||(console.error('DATABASE_URL is required; see docs/testing/api-integration-tests.md'),process.exit(1))\" && vitest run src/routes/activities/config.integration.test.ts"
   },
   "dependencies": {
     "@coursematch/allocation": "*",
