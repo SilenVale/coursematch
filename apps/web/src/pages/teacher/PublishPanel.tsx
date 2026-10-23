@@ -62,15 +62,15 @@ function buildChecklist(params: {
   });
 
   items.push({
-    label: "题目与名额",
+    label: "开设课程",
     state: topicPending ? "unknown" : topicCount === null ? "unknown" : topicCount > 0 ? "ok" : "fail",
     detail: topicPending
-      ? "题目接口尚未实现（501），无法确认"
+      ? "开设课程接口尚未实现（501），无法确认"
       : topicCount === null
         ? "尚未加载"
         : topicCount > 0
-          ? `${topicCount} 个题目`
-          : "至少需要一个题目",
+          ? `${topicCount} 门可选课`
+          : "至少需要一门可选课",
   });
 
   return items;
@@ -116,7 +116,7 @@ export function PublishPanel({
     setNotice("");
     try {
       const next = await publishActivity(activity.activityId, activity.configVersion);
-      setNotice(`活动已发布，配置版本 v${next.configVersion}，学生现在可以看到题目。`);
+      setNotice(`活动已发布，配置版本 v${next.configVersion}，学生现在可以填报志愿。`);
       onPublished(next);
     } catch (err) {
       const apiError = toApiError(err);
