@@ -33,6 +33,7 @@ export async function apiFreezePost(activityId: string) {
     method: "POST",
     credentials: "include",
     headers: headers(),
+    body: "{}",
   });
   const json = await parse<{ data: FreezeView }>(res);
   return json.data;
@@ -43,6 +44,7 @@ export async function apiAllocate(activityId: string) {
     method: "POST",
     credentials: "include",
     headers: headers(),
+    body: "{}",
   });
   const json = await parse<{ data: AllocationView }>(res);
   return json.data;
