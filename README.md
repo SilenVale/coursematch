@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-共同工程底座已进仓库：monorepo、PostgreSQL 迁移、种子账号、登录会话、活动列表只读、前端壳与占位页。业务接口除认证与活动读取外返回 501，由三位组员在约定目录实现。
+**V1 业务主链已在 `master` 接通**（本地可演示）：教师活动配置与发布、学生志愿、截止后冻结与主分配、教师汇总/证据/关闭、学生本人结果 API 与页面。公开 HTTPS 部署与 §1.4 八条证据仍在推进中。
 
 架构契约：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（来源：设计报告 v0.5，平台最高分 98.6）。类型：[docs/contracts/api-contracts.ts](docs/contracts/api-contracts.ts)（与 `packages/shared` 同步）。
 
-**第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md)（组员与 Agent 实现业务前必读）。
+**第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md) · 勾选表：[docs/V1_CHECKLIST.md](docs/V1_CHECKLIST.md) · 联调步骤：[docs/testing/v1-e2e-runbook.md](docs/testing/v1-e2e-runbook.md)
 
 **组员任务卡与 Agent 开场词：** [docs/roles/README.md](docs/roles/README.md)、[docs/AGENT_START.md](docs/AGENT_START.md)。
 
@@ -51,7 +51,13 @@ set -a && source .env && set +a && npm run migrate && npm run seed
 npm test
 ```
 
-含 `packages/allocation` 主分配固定样例测试。
+含 `packages/allocation` 主分配固定样例与 `apps/api` 路由单测。
+
+生产构建（联调前建议跑一次）：
+
+```bash
+npm run build
+```
 
 ## 组员从哪开始
 
