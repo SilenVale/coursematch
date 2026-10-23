@@ -11,8 +11,9 @@ declare module "fastify" {
 }
 import { pool } from "./db/pool.js";
 import { loadActorBySession, sessionCookieName } from "./lib/session.js";
-import { csrfPlugin } from "./plugins/csrf.js";
+import { registerCsrfProtection } from "./plugins/csrf.js";
 import { authRoutes } from "./routes/auth.js";
+import { activityConfigRoutes } from "./routes/activities/config.js";
 import { activityReadRoutes } from "./routes/activities/read.js";
 import { activityStubRoutes } from "./routes/activities/stubs.js";
 import { demoRoleCheck } from "./routes/role-guard.js";
@@ -26,7 +27,7 @@ export async function buildApp() {
     credentials: true,
   });
   await app.register(cookie);
-  await app.register(csrfPlugin);
+  registerCsrfProtection(app);
 
   app.decorateRequest("actor", null);
   app.addHook("preHandler", async (req) => {
@@ -38,6 +39,7 @@ export async function buildApp() {
 
   await app.register(authRoutes);
   await app.register(activityReadRoutes);
+  await app.register(activityConfigRoutes);
   await app.register(activityStubRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));

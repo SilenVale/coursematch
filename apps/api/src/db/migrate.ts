@@ -1,14 +1,22 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pool } from "./pool.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const sql = readFileSync(join(here, "migrations", "001_initial.sql"), "utf8");
+const migrationsDir = join(here, "migrations");
 
 async function main() {
-  await pool.query(sql);
-  console.log("Migration 001 applied.");
+  const files = readdirSync(migrationsDir)
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+
+  for (const file of files) {
+    const sql = readFileSync(join(migrationsDir, file), "utf8");
+    await pool.query(sql);
+    console.log(`Migration applied: ${file}`);
+  }
+
   await pool.end();
 }
 
