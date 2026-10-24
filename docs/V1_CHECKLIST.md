@@ -6,9 +6,9 @@
 | # | 交付项 | 负责人 | 通过？ | 证据（PR / 录屏 / 文档 / URL） |
 |---|--------|--------|--------|--------------------------------|
 | 1 | 主链端到端 | 汪奕辰汇总 | ☐ | [v1-e2e-runbook.md](./testing/v1-e2e-runbook.md) 执行记录： |
-| 2 | 分配规则正确 | 罗子超 | ☐ | `npm test` 输出；系统内 ABCD 复核： |
+| 2 | 分配规则正确 | 罗子超 | ⚠ | [M4/M5 测试报告](./testing/luozichao-m4m5-test-report.md)：ABCD、最小 lottery 冲突、混合提交及独立期望核对均通过；但 `buildPersonalRounds` 发现 P1 解释矛盾，修复回归后再改为 ☑ |
 | 3 | 服务端权威 | 三人 PR + 联调 | ☐ | 越权用例（runbook §6）： |
-| 4 | 截止与冻结 | 刘 + 罗 | ☐ | 截止拒写截图；冻结完整快照： |
+| 4 | 截止与冻结 | 刘 + 罗 | ☑ | [M4/M5 测试报告](./testing/luozichao-m4m5-test-report.md)：截止前 409、无 READY 快照 409、4 人唯一 lottery、完整快照、重复冻结同一 snapshotId |
 | 5 | CSV 与发布 | 石俊贤 | ☐ | [m2-test-cases.md](./testing/m2-test-cases.md) · 集成测试 PR #28（`TC-M2-xxx`）+ Dev 实机： |
 | 6 | 契约一致 | 各 PR review | ☐ | |
 | 7 | 可公开体验 HTTPS | 汪奕辰 | ☑ | [https://coursematch-dev.onrender.com](https://coursematch-dev.onrender.com) · `GET /api/health` → 200 · README 已更新 |
