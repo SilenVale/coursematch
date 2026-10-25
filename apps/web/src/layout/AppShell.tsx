@@ -1,17 +1,44 @@
 import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import type { ActorView } from "@coursematch/shared";
+import { NavIcon } from "../components/NavIcon";
 import { UserMenu } from "../components/UserMenu";
+import { useTopbarScroll } from "./useTopbarScroll";
 
-const TEACHER_NAV = [{ to: "/", label: "工作台", end: true }] as const;
+type NavItem = {
+  to: string;
+  label: string;
+  icon: "layout-dashboard" | "list-checks" | "clipboard-list" | "plus-square";
+  end?: boolean;
+};
 
-const STUDENT_NAV = [
-  { to: "/", label: "工作台", end: true },
-  { to: "/student/preferences", label: "志愿填报" },
-  { to: "/student/results", label: "我的结果" },
-] as const;
+const TEACHER_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "工作台",
+    items: [
+      { to: "/", label: "我的选课任务", icon: "layout-dashboard", end: true },
+      { to: "/teacher/courses/new", label: "新建选课任务", icon: "plus-square" },
+    ],
+  },
+];
+
+const STUDENT_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "选课",
+    items: [
+      { to: "/", label: "工作台", icon: "layout-dashboard", end: true },
+      { to: "/student/preferences", label: "志愿填报", icon: "clipboard-list" },
+      { to: "/student/results", label: "我的结果", icon: "list-checks" },
+    ],
+  },
+];
+
+function crumbGroup(actor: ActorView): string {
+  return actor.role === "TEACHER" ? "教师" : "学生";
+}
 
 function pageTitle(pathname: string): string {
+  if (pathname.startsWith("/teacher/courses/new")) return "新建选课任务";
   if (pathname.startsWith("/teacher/courses")) return "选课任务";
   if (pathname.startsWith("/student/preferences")) return "志愿填报";
   if (pathname.startsWith("/student/results")) return "我的结果";
@@ -28,57 +55,78 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { pathname } = useLocation();
-  const nav = actor.role === "TEACHER" ? TEACHER_NAV : STUDENT_NAV;
-  const roleLabel = actor.role === "TEACHER" ? "教师" : "学生";
+  const groups = actor.role === "TEACHER" ? TEACHER_GROUPS : STUDENT_GROUPS;
+  const { mainRef, scrolled } = useTopbarScroll();
 
   return (
     <div className="app">
       <aside className="sidebar" aria-label="主导航">
-        <div className="brand-block">
-          <div className="brand-mark" aria-hidden>
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="32" height="32" rx="8" fill="currentColor" opacity="0.12" />
-              <path
-                d="M8 12h16v2H8v-2zm0 5h12v2H8v-2zm0 5h10v2H8v-2z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
-          <div className="brand-text">
-            <span className="brand-name">CourseMatch</span>
-            <span className="brand-sub">选课与分配</span>
+        <div className="sb-top">
+          <div className="ws-switch" aria-label="CourseMatch 工作区">
+            <div className="brand-mark" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M6 8h12M6 12h10M6 16h8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="ws-text">
+              <span className="ws-name">CourseMatch</span>
+              <span className="ws-sub">选课与分配 · 演示</span>
+            </div>
           </div>
         </div>
 
-        <nav className="sb-groups">
-          <div className="sb-group">
-            <div className="sb-label">{roleLabel}端</div>
-            {nav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={"end" in item ? item.end : false}
-                className={({ isActive }) => `sb-item${isActive ? " is-active" : ""}`}
-              >
-                <span className="sb-text">{item.label}</span>
-              </NavLink>
-            ))}
+        <div className="sb-scroll">
+          {groups.map((group) => (
+            <div className="sb-group" key={group.label}>
+              <div className="sb-label">{group.label}</div>
+              <nav className="sb-nav" aria-label={group.label}>
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end ?? false}
+                    className={({ isActive }) => `sb-item${isActive ? " is-active" : ""}`}
+                  >
+                    <NavIcon name={item.icon} />
+                    <span className="sb-text">{item.label}</span>
+                  </NavLink>
+                ))}
+              </nav>
+            </div>
+          ))}
+        </div>
+
+        <div className="sb-foot">
+          <div className="target-card">
+            <p className="target-card-title">流程提示</p>
+            <p className="target-card-body">
+              {actor.role === "TEACHER"
+                ? "发布 → 学生填报 → 截止后冻结并主分配。"
+                : "截止前保存志愿；分配后在「我的结果」查看。"}
+            </p>
           </div>
-        </nav>
+        </div>
       </aside>
 
       <div className="inset">
-        <header className="topbar">
+        <header className={`topbar${scrolled ? " scrolled" : ""}`}>
           <div className="crumbs">
-            <span className="crumb-muted">CourseMatch</span>
-            <span className="crumb-sep" aria-hidden>/</span>
+            <span className="crumb-muted">{crumbGroup(actor)}</span>
+            <span className="crumb-sep" aria-hidden>
+              /
+            </span>
             <span aria-current="page">{pageTitle(pathname)}</span>
           </div>
           <div className="topbar-actions">
             <UserMenu actor={actor} onLogout={onLogout} />
           </div>
         </header>
-        <main className="main">
+        <main className="main" ref={mainRef}>
           <div className="content">{children}</div>
         </main>
       </div>
