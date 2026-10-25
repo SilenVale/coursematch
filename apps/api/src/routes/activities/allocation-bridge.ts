@@ -10,6 +10,41 @@ function canChooseTopic(topic: FrozenInput["topics"][number], participantId: str
   return topic.eligibleParticipantIds.includes(participantId);
 }
 
+type EngineParticipant = EngineInput["participants"][number];
+
+function buildByTopicAtRank(
+  participants: EngineParticipant[],
+  assigned: Set<string>,
+  rank: number,
+): Map<string, EngineParticipant[]> {
+  const byTopic = new Map<string, EngineParticipant[]>();
+  for (const cand of participants) {
+    if (assigned.has(cand.participantId)) continue;
+    const tid = cand.orderedTopicIds[rank - 1];
+    if (!tid) continue;
+    const list = byTopic.get(tid) ?? [];
+    list.push(cand);
+    byTopic.set(tid, list);
+  }
+  return byTopic;
+}
+
+/** 与 `calculateAllocation` 单轮内对各题的处理顺序与扣减一致。 */
+function processAllTopicsAtRank(
+  byTopic: Map<string, EngineParticipant[]>,
+  remaining: Map<string, number>,
+  assigned: Set<string>,
+): void {
+  for (const [topicId, group] of byTopic) {
+    const available = remaining.get(topicId) ?? 0;
+    const eligible = group.filter((c) => c.eligibleTopicIds.includes(topicId));
+    const sorted = [...eligible].sort((a, b) => a.lotteryNumber - b.lotteryNumber);
+    const selected = sorted.slice(0, available);
+    for (const s of selected) assigned.add(s.participantId);
+    remaining.set(topicId, available - selected.length);
+  }
+}
+
 export function toEngineInput(contract: FrozenInput): EngineInput {
   const submissionByParticipant = new Map(
     contract.submissions.map((s) => [s.participantId, s.topicIds]),
@@ -52,23 +87,14 @@ export function buildPersonalRounds(
     const topicId = p.orderedTopicIds[rank - 1];
     if (!topicId) continue;
 
-    const byTopic = new Map<string, typeof engine.participants>();
-    for (const cand of engine.participants) {
-      if (assigned.has(cand.participantId)) continue;
-      const tid = cand.orderedTopicIds[rank - 1];
-      if (!tid) continue;
-      const list = byTopic.get(tid) ?? [];
-      list.push(cand);
-      byTopic.set(tid, list);
-    }
-
-    const group = byTopic.get(topicId) ?? [];
+    const byTopic = buildByTopicAtRank(engine.participants, assigned, rank);
     const availableAtRoundStart = remaining.get(topicId) ?? 0;
+    const group = byTopic.get(topicId) ?? [];
     const eligible = group.filter((c) => c.eligibleTopicIds.includes(topicId));
     const eligibleCandidateCount = eligible.length;
-    const sorted = [...eligible].sort((a, b) => a.lotteryNumber - b.lotteryNumber);
-    const selected = sorted.slice(0, availableAtRoundStart);
-    const allocatedInRound = selected.length;
+
+    processAllTopicsAtRank(byTopic, remaining, assigned);
+    const allocatedInRound = availableAtRoundStart - (remaining.get(topicId) ?? 0);
 
     let outcome: RoundOutcome;
     const eligibleSelf = p.eligibleTopicIds.includes(topicId);
@@ -79,8 +105,6 @@ export function buildPersonalRounds(
       allocation.topicId === topicId &&
       allocation.matchedRank === rank
     ) {
-      outcome = "ASSIGNED";
-    } else if (selected.some((s) => s.participantId === participantId)) {
       outcome = "ASSIGNED";
     } else if (availableAtRoundStart === 0) {
       outcome = "CAPACITY_FULL";
@@ -97,11 +121,6 @@ export function buildPersonalRounds(
       allocatedInRound,
       outcome,
     });
-
-    for (const s of selected) {
-      assigned.add(s.participantId);
-    }
-    remaining.set(topicId, availableAtRoundStart - allocatedInRound);
   }
 
   return rounds;

@@ -100,6 +100,8 @@ npm run build
 
 ### P1：轮次解释可能与权威分配结果矛盾（已复现，必须修复）
 
+> **后续：** 已修复；回归见 `apps/api/src/routes/activities/allocation-bridge.test.ts`。
+
 位置：`apps/api/src/routes/activities/allocation-bridge.ts` 的 `buildPersonalRounds`。
 
 复现场景：甲、乙各容量 1；A(lottery=1) 第一志愿乙，C(lottery=2) 第一志愿甲，B(lottery=3) 志愿为甲、乙。
@@ -126,5 +128,5 @@ npm run build
 
 - 冻结完整性、lottery 唯一性、主分配结果、顺序幂等、边界拒绝、权限拒绝、师生结果字段一致性均通过自动验证。
 - 截止与冻结项可以勾选通过。
-- 分配最终去向符合 `ALLOCATION.md`；但轮次解释存在 P1 矛盾，因此“分配规则正确”暂不应写成无保留通过。修复 P1 并运行回归后再正式勾选 #2。
+- 分配最终去向符合 `ALLOCATION.md`；P1 轮次解释已修复并加回归测试，V1 #2 可勾选。
 - 未执行真实 PostgreSQL + 浏览器 UI 流程，原因是本机无 Docker；该限制已明确记录，未伪造截图或人工结论。
