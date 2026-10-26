@@ -1143,6 +1143,12 @@ a.btn:hover {
   cursor: default;
 }
 
+.assistant-llm-hint {
+  margin: 0 0 0.5rem;
+  padding: 0 0.25rem;
+  text-align: center;
+}
+
 .assistant-key-note {
   margin: 0;
   font-size: 12.5px;

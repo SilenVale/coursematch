@@ -137,10 +137,6 @@ export function TeacherAssistantPage() {
       const fromServer = status.llmSource === "server" && status.llmReady;
       setServerLlm(fromServer);
       setServerKeyStore(status.serverKeyStore);
-      if (!fromServer && !readStoredKey()) {
-        setKeyMode("server");
-        setKeyOpen(true);
-      }
     });
   }, []);
 
@@ -226,10 +222,6 @@ export function TeacherAssistantPage() {
   async function send(message: string, shown?: string) {
     const trimmed = message.trim();
     if (!trimmed || busy) return;
-    if (!llmReady) {
-      setKeyOpen(true);
-      return;
-    }
     setBusy(true);
     setError("");
     const teacherLine: ChatLine = { role: "teacher", text: shown ?? trimmed };
@@ -410,6 +402,11 @@ export function TeacherAssistantPage() {
           </p>
         )}
       </div>
+      {!llmReady && !keyOpen && (
+        <p className="assistant-key-note assistant-llm-hint">
+          当前为规则助理模式；需要 DeepSeek 时点「接入 DeepSeek（可选）」，或由管理员在 Render 配置 DEEPSEEK_API_KEY。
+        </p>
+      )}
       {error && <p className="assistant-error">{error}</p>}
       <form
         className="assistant-composer"
@@ -460,7 +457,7 @@ export function TeacherAssistantPage() {
               setKeyOpen(true);
             }}
           >
-            {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "配置 DeepSeek"}
+            {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "接入 DeepSeek（可选）"}
           </button>
           <button type="button" className="assistant-key-open" disabled={busy} onClick={startNewConversation}>
             新对话
