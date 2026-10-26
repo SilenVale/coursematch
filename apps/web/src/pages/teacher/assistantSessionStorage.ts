@@ -18,7 +18,8 @@ export interface AssistantDraft {
   rosterWritten: boolean;
   topic: AssistantTopic;
   topicWritten: boolean;
-  pending: "create" | "publish" | "provision" | "freeze" | "allocate" | null;
+  pending: "create" | "publish" | "provision" | "freeze" | "allocate" | "add_topic" | null;
+  pendingAddTopic?: AssistantTopic | null;
   awaiting?: string | null;
 }
 
