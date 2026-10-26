@@ -8,7 +8,9 @@ import {
 } from "./assistantSessionApi";
 import {
   ASSISTANT_WELCOME,
+  assistantSessionHasProgress,
   clearAssistantSession,
+  freshAssistantSession,
   saveAssistantSession,
   type AssistantDraft,
   type ChatLine,
@@ -122,6 +124,8 @@ export function TeacherAssistantPage() {
   const [serverUrlDraft, setServerUrlDraft] = useState(DEFAULT_LLM_URL);
   const [serverModelDraft, setServerModelDraft] = useState(DEFAULT_LLM_MODEL);
   const [keySaving, setKeySaving] = useState(false);
+  const [restartOpen, setRestartOpen] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -185,17 +189,43 @@ export function TeacherAssistantPage() {
     return () => window.clearTimeout(timer);
   }, [accountId, confirm, draft, lines, sessionReady]);
 
-  function startNewConversation() {
-    if (busy) return;
-    if (accountId) {
-      clearAssistantSession(accountId);
-      void clearTeacherAssistantSession().catch(() => undefined);
-    }
-    setDraft(null);
-    setLines([ASSISTANT_WELCOME]);
-    setConfirm(null);
-    setText("");
+  const sessionBusy = busy || restarting;
+  const hasProgress = assistantSessionHasProgress({ draft, lines, confirm });
+
+  async function applySessionRestart() {
+    if (sessionBusy) return;
+    setRestarting(true);
     setError("");
+    skipPersistRef.current = true;
+    const fresh = freshAssistantSession();
+    try {
+      if (accountId) {
+        clearAssistantSession(accountId);
+        await clearTeacherAssistantSession();
+        saveAssistantSession(accountId, fresh);
+        await saveTeacherAssistantSession({ v: 1, ...fresh });
+      }
+      setDraft(fresh.draft);
+      setLines(fresh.lines);
+      setConfirm(fresh.confirm);
+      setText("");
+      setRestartOpen(false);
+      inputRef.current?.focus();
+    } catch {
+      setError("会话没有清空成功，请稍后再试");
+    } finally {
+      skipPersistRef.current = false;
+      setRestarting(false);
+    }
+  }
+
+  function requestSessionRestart() {
+    if (sessionBusy) return;
+    if (hasProgress) {
+      setRestartOpen(true);
+      return;
+    }
+    void applySessionRestart();
   }
 
   const llmReady = serverLlm || !!apiKey;
@@ -290,6 +320,37 @@ export function TeacherAssistantPage() {
 
   return (
     <div className="assistant">
+      <header className="assistant-toolbar">
+        <p className="assistant-toolbar-title">选课助理</p>
+        <button
+          type="button"
+          className="assistant-restart"
+          disabled={sessionBusy}
+          aria-haspopup={hasProgress ? "dialog" : undefined}
+          onClick={requestSessionRestart}
+        >
+          重启会话
+        </button>
+      </header>
+      {restartOpen && (
+        <div className="assistant-key" role="dialog" aria-modal="true" aria-labelledby="assistant-restart-title">
+          <div className="assistant-key-card">
+            <h2 id="assistant-restart-title">重启会话？</h2>
+            <p>
+              将清空当前聊天记录和助理草稿（未确认的操作也会取消）。<strong>不会删除</strong>
+              已在「我的课程」里创建的活动，只是从这里重新开始一场新的对话。
+            </p>
+            <div className="assistant-key-actions">
+              <button type="button" className="assistant-dialog-secondary" disabled={restarting} onClick={() => setRestartOpen(false)}>
+                取消
+              </button>
+              <button type="button" disabled={restarting} onClick={() => void applySessionRestart()}>
+                {restarting ? "正在清空…" : "确认重启"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {keyOpen && (
         <div className="assistant-key" role="dialog" aria-modal="true" aria-labelledby="assistant-key-title">
           <form
@@ -482,9 +543,6 @@ export function TeacherAssistantPage() {
             }}
           >
             {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "接入 DeepSeek（可选）"}
-          </button>
-          <button type="button" className="assistant-key-open" disabled={busy} onClick={startNewConversation}>
-            新对话
           </button>
           <span className="assistant-hint">对话按账号保存在服务器 · Enter 发送</span>
           <button type="submit" className="assistant-send" disabled={busy || !text.trim()} aria-label="发送">
