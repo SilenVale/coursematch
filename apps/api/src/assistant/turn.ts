@@ -1,4 +1,4 @@
-import { isAddTopicIntent, tryAddTopicTurn } from "./add-topic.js";
+import { isAddTopicIntent, tryAddTopicBeforeCreate, tryAddTopicTurn } from "./add-topic.js";
 import { applyExtract, extractSlots, type ExtractUpdate } from "./extract.js";
 import { beijingToIso } from "./extract.js";
 import {
@@ -311,6 +311,21 @@ function planTurn(
 
   if (isConfirmMessage(text)) {
     if (!draft.pending) {
+      if (!draft.activityId && readyToCreate(draft)) {
+        const next = { ...draft, pending: "create" as const };
+        const summary = createSummary(next);
+        if (draft.pendingAddTopic?.instructor) {
+          summary.push(
+            `创建成功后待添加：${draft.pendingAddTopic.instructor} · ${draft.pendingAddTopic.courseName}`,
+          );
+        }
+        return {
+          draft: next,
+          reply: "信息齐了，请确认创建。",
+          confirm: card("create", summary),
+          execute: null,
+        };
+      }
       return { draft, reply: "现在没有待确认的动作。", confirm: null, execute: null };
     }
     return { draft, reply: "正在执行。", confirm: null, execute: draft.pending };
@@ -323,6 +338,8 @@ function planTurn(
 
   const update = extracted ?? extractSlots(text, now);
   if (isAddTopicIntent(text)) {
+    const beforeCreate = tryAddTopicBeforeCreate(draft, text, update);
+    if (beforeCreate) return beforeCreate;
     const addTurn = tryAddTopicTurn(draft, text, update);
     if (addTurn) return withProgress(update, addTurn);
   }

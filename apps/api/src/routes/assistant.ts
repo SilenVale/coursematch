@@ -170,7 +170,7 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
     return ok({
       draft: executed.draft,
       reply: executed.reply,
-      confirm: null,
+      confirm: executed.confirm ?? null,
       execute: null,
     });
   });

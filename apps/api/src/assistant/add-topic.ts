@@ -26,6 +26,69 @@ export function buildAddTopic(base: AssistantTopic, update: ExtractUpdate, text:
   };
 }
 
+function gapsFilledForCreate(draft: AssistantDraft): boolean {
+  return !!(
+    draft.title.trim() &&
+    draft.deadlineAt &&
+    draft.startAt &&
+    draft.rosterText.trim() &&
+    draft.topic.courseName.trim() &&
+    draft.topic.instructor.trim() &&
+    draft.topic.schedule.trim() &&
+    draft.topic.capacity
+  );
+}
+
+/** 尚未创建活动前，老师说「再加一位老师」：记入 pendingAddTopic，并继续弹出「确认创建」。 */
+export function tryAddTopicBeforeCreate(
+  draft: AssistantDraft,
+  message: string,
+  update: ExtractUpdate,
+): TurnResult | null {
+  if (draft.activityId || !isAddTopicIntent(message)) return null;
+
+  const queued = buildAddTopic(draft.topic, update, message);
+  if (!queued?.instructor) {
+    return {
+      draft,
+      reply: "要新增哪位授课教师？例如：「再加刘老师，时间和名额跟之前一样」。",
+      confirm: null,
+      execute: null,
+    };
+  }
+  if (queued.instructor === draft.topic.instructor) {
+    return {
+      draft,
+      reply: "这位老师和第一场要创建的课程相同。请换一位教师，或先确认创建后再添加。",
+      confirm: null,
+      execute: null,
+    };
+  }
+
+  const next = { ...draft, pendingAddTopic: queued };
+
+  if (!gapsFilledForCreate(draft)) {
+    return {
+      draft: next,
+      reply: `已记下 ${queued.instructor}。等信息齐了、确认创建后，再带你确认添加这位教师。`,
+      confirm: null,
+      execute: null,
+    };
+  }
+
+  const summary = [
+    `名称：${draft.title}`,
+    `课程：${draft.topic.instructor} · ${draft.topic.courseName}（${draft.topic.schedule}，名额 ${draft.topic.capacity}）`,
+    `创建成功后待添加：${queued.instructor} · ${queued.courseName}（${queued.schedule}，名额 ${queued.capacity}）`,
+  ];
+  return {
+    draft: { ...next, pending: "create" },
+    reply: `已记下 ${queued.instructor}，不会改掉 ${draft.topic.instructor} 那场课。请先确认创建；创建后会再弹出「确认添加课程」。`,
+    confirm: { action: "create", summary },
+    execute: null,
+  };
+}
+
 export function tryAddTopicTurn(
   draft: AssistantDraft,
   message: string,

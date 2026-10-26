@@ -1,8 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { tryAddTopicTurn } from "./add-topic.js";
+import { tryAddTopicBeforeCreate, tryAddTopicTurn } from "./add-topic.js";
 import { emptyDraft } from "./model.js";
 
 describe("添加授课教师", () => {
+  it("创建前说再加老师，应仍弹出确认创建并排队 pendingAddTopic", () => {
+    const draft = emptyDraft();
+    draft.title = "助理验收";
+    draft.deadlineAt = "2026-11-20T10:00:00.000Z";
+    draft.startAt = "2026-11-01T01:00:00.000Z";
+    draft.rosterText = "学号,姓名\n20261001,甲";
+    draft.topic = {
+      courseName: "数据结构与算法",
+      instructor: "李老师",
+      schedule: "周四 7-8 节",
+      capacity: 30,
+    };
+    const result = tryAddTopicBeforeCreate(
+      draft,
+      "我现在还想加个老师刘老师，时间和名额是一样的",
+      { instructor: "刘老师" },
+    );
+    expect(result?.confirm?.action).toBe("create");
+    expect(result?.draft.pendingAddTopic?.instructor).toMatch(/刘老师/);
+    expect(result?.draft.pending).toBe("create");
+  });
+
   it("已创建活动后提出新增老师，应出确认卡而非空口答应", () => {
     const draft = emptyDraft();
     draft.activityId = "act-1";
