@@ -35,4 +35,4 @@ curl -sf -b "$JAR" \
 curl -sf -b "$JAR" -H "X-CourseMatch-Request: 1" -H "Origin: $ORIGIN" \
   "$ORIGIN/api/assistant/llm-status" | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin).get('data'), ensure_ascii=False))"
 
-echo "已同步到 $ORIGIN（serverKeyStore=file；Render 重新部署后可能需再跑一次，或改用 Dashboard 环境变量）"
+printf '%s\n' "已同步到 ${ORIGIN} (serverKeyStore=file). 重新部署后请再运行本脚本，或在 Render Dashboard 设置 DEEPSEEK_API_KEY。"
