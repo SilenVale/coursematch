@@ -25,13 +25,22 @@ export function TeacherHome() {
           <h1 className="page-head">我的选课任务</h1>
           <p className="lead">创建并发布选课，学生在截止前填报志愿；截止后在「分配结果」中冻结并主分配。</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => navigate("/teacher/courses/new")}
-        >
-          新建选课任务
-        </button>
+        <div className="btn-row">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => navigate("/teacher/assistant")}
+          >
+            用助理创建
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate("/teacher/courses/new")}
+          >
+            新建选课任务
+          </button>
+        </div>
       </div>
 
       {error && <p className="error">{error}</p>}

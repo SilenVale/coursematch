@@ -3,7 +3,10 @@ import { NavLink, useLocation } from "react-router-dom";
 import type { ActorView } from "@coursematch/shared";
 import { UserMenu } from "../components/UserMenu";
 
-const TEACHER_NAV = [{ to: "/", label: "工作台", end: true }] as const;
+const TEACHER_NAV = [
+  { to: "/", label: "工作台", end: true },
+  { to: "/teacher/assistant", label: "选课助理" },
+] as const;
 
 const STUDENT_NAV = [
   { to: "/", label: "工作台", end: true },
@@ -12,6 +15,7 @@ const STUDENT_NAV = [
 ] as const;
 
 function pageTitle(pathname: string): string {
+  if (pathname.startsWith("/teacher/assistant")) return "选课助理";
   if (pathname.startsWith("/teacher/courses")) return "选课任务";
   if (pathname.startsWith("/student/preferences")) return "志愿填报";
   if (pathname.startsWith("/student/results")) return "我的结果";

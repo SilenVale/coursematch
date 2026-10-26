@@ -22,6 +22,7 @@ import { activityPreferenceRoutes } from "./routes/activities/preferences.js";
 import { activityReadRoutes } from "./routes/activities/read.js";
 import { activityResultsRoutes } from "./routes/activities/results.js";
 import { activityStubRoutes } from "./routes/activities/stubs.js";
+import { assistantRoutes } from "./routes/assistant.js";
 import { demoRoleCheck } from "./routes/role-guard.js";
 
 export async function buildApp() {
@@ -54,6 +55,7 @@ export async function buildApp() {
   // M3 必须在 stubs 之前注册：stub 里同名路由会让 Fastify 抛重复路由。
   await app.register(activityPreferenceRoutes);
   await app.register(activityStubRoutes);
+  await app.register(assistantRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));
 

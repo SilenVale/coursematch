@@ -9,6 +9,7 @@ import { CourseLayout } from "./pages/teacher/CourseLayout";
 import { CourseOverview } from "./pages/teacher/CourseOverview";
 import { CreateCoursePage } from "./pages/teacher/CreateCoursePage";
 import { FreezeAllocationPage } from "./pages/teacher/FreezeAllocationPage";
+import { TeacherAssistantPage } from "./pages/teacher/TeacherAssistantPage";
 import { PreferencesPage } from "./pages/student/PreferencesPage";
 import { ResultsPage } from "./pages/student/ResultsPage";
 import { HomePage } from "./pages/Home";
@@ -25,6 +26,12 @@ function AuthenticatedRoutes({
       <Routes>
         <Route path="/" element={<HomePage actor={actor} />} />
         <Route path="/teacher/courses/new" element={<CreateCoursePage />} />
+        <Route
+          path="/teacher/assistant"
+          element={
+            actor.role === "TEACHER" ? <TeacherAssistantPage /> : <Navigate to="/" replace />
+          }
+        />
         <Route path="/teacher/courses/:activityId" element={<CourseLayout />}>
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<CourseOverview />} />
