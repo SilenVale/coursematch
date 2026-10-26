@@ -1,3 +1,4 @@
+import { tryAddTopicTurn } from "./add-topic.js";
 import { normalizeModelJson } from "./deepseek.js";
 import type { ExtractUpdate } from "./extract.js";
 import { extractSlots } from "./extract.js";
@@ -165,6 +166,8 @@ function observe(draft: AssistantDraft, message: string, decision: Decision, now
     );
   }
 
+  const addTurn = tryAddTopicTurn(draft, message, update);
+  if (addTurn) return withProgress(update, addTurn);
   let next = applySlots(draft, update, now);
   if (
     draft.awaiting === "title" &&

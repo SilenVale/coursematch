@@ -64,6 +64,49 @@ function offerDescription(instructor: string, schedule: string): string {
   return `授课教师：${instructor.trim()}\n上课时间：${schedule.trim()}`;
 }
 
+async function executeAddTopic(
+  app: FastifyInstance,
+  req: FastifyRequest,
+  draft: AssistantDraft,
+): Promise<{ draft: AssistantDraft; reply: string }> {
+  const topic = draft.pendingAddTopic;
+  if (!draft.activityId || draft.configVersion === null || !topic) {
+    return { draft: { ...draft, pending: null, pendingAddTopic: null }, reply: "没有待添加的课程。" };
+  }
+  const createdTopic = await call(
+    app,
+    req,
+    "POST",
+    `/api/activities/${draft.activityId}/topics`,
+    JSON.stringify({
+      title: offerTitle(topic.instructor, topic.courseName),
+      description: offerDescription(topic.instructor, topic.schedule),
+      tags: [],
+      capacity: topic.capacity,
+      eligibilityMode: "ALL",
+      eligibilityDescription: "",
+      expectedConfigVersion: draft.configVersion,
+    }),
+  );
+  if (createdTopic.status >= 400) {
+    return {
+      draft: { ...draft, pending: "add_topic" },
+      reply: `${errorText(createdTopic.json, "课程没有添加")}\n改完后回复「确认」再试。`,
+    };
+  }
+  const data = (createdTopic.json as OkBody<{ configVersion: number }>).data;
+  return {
+    draft: {
+      ...draft,
+      pending: null,
+      pendingAddTopic: null,
+      topic,
+      configVersion: data?.configVersion ?? draft.configVersion,
+    },
+    reply: `已添加 ${topic.instructor} · ${topic.courseName}。打开课程设置可看到两门课；要发布请说「发布」。`,
+  };
+}
+
 export async function executeAction(
   app: FastifyInstance,
   req: FastifyRequest,
@@ -71,6 +114,7 @@ export async function executeAction(
   draft: AssistantDraft,
 ): Promise<{ draft: AssistantDraft; reply: string }> {
   if (action === "create") return executeCreate(app, req, draft);
+  if (action === "add_topic") return executeAddTopic(app, req, draft);
   if (!draft.activityId) {
     return { draft, reply: "还没有选课草稿，不能做这一步。" };
   }

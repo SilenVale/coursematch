@@ -17,8 +17,9 @@ slots：只填写老师这次明确说到的选课信息。没说到的字段不
 老师如果是在问你，而不是在补充选课信息，slots 留空。
 
 tool：没有写操作时必须是 null。需要写入时只能填这些名字：
-read_draft、create_activity、publish_activity、provision_accounts、freeze_activity、allocate_activity。
+read_draft、create_activity、add_topic、publish_activity、provision_accounts、freeze_activity、allocate_activity。
 read_draft 只表示查看，草稿已经在上下文里。
+add_topic 仅用于活动已创建后、再增加一名授课教师/一门可选课；不能代替 create_activity。
 其余都是写操作，你只能提出，系统会另弹确认。你不能声称它们已经完成。
 
 不能说的：

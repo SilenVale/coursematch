@@ -1,6 +1,6 @@
 /** 教师选课助理的对话草稿。活动记录仍以数据库为准，这里只在确认前攒槽位。 */
 
-export type ConfirmAction = "create" | "publish" | "provision" | "freeze" | "allocate";
+export type ConfirmAction = "create" | "publish" | "provision" | "freeze" | "allocate" | "add_topic";
 
 export type AwaitingSlot =
   | "title"
@@ -36,6 +36,8 @@ export interface AssistantDraft {
   topic: AssistantTopic;
   topicWritten: boolean;
   pending: ConfirmAction | null;
+  /** 待确认添加的第二条及以后课程（首条已在 topic 里）。 */
+  pendingAddTopic?: AssistantTopic | null;
   /** 上一句问的是哪一项。模型据此理解老师的短回答。 */
   awaiting: AwaitingSlot | null;
 }
@@ -73,7 +75,7 @@ export function emptyDraft(): AssistantDraft {
 }
 
 export function isConfirmMessage(message: string): boolean {
-  return /^\s*确认(创建|发布|冻结|主分配|分配|开通账号)?\s*[。！!]?\s*$/.test(message);
+  return /^\s*确认(创建|发布|冻结|主分配|分配|开通账号|添加)?\s*[。！!]?\s*$/.test(message);
 }
 
 export function isCancelMessage(message: string): boolean {
