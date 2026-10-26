@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { apiMe } from "../../api/client";
 import { draftFromExistingActivity } from "./assistantActivitySeed";
 import { getActivity, listTopics } from "./configApi";
@@ -13,6 +13,7 @@ import {
   assistantSessionHasProgress,
   clearAssistantSession,
   freshAssistantSession,
+  loadAssistantSession,
   saveAssistantSession,
   type AssistantDraft,
   type ChatLine,
@@ -107,12 +108,23 @@ async function postTurn(
   return body.data;
 }
 
+const LINK_ACTIVITY_HINT = /已接上选课任务「/;
+
 export function TeacherAssistantPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activityLinkId = searchParams.get("activity")?.trim() ?? "";
   const [accountId, setAccountId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
   const skipPersistRef = useRef(true);
+  const activityLinkHandledRef = useRef<string | null>(null);
+  const persistSnapshotRef = useRef<{
+    accountId: string | null;
+    draft: AssistantDraft | null;
+    lines: ChatLine[];
+    confirm: ConfirmCard | null;
+  }>({ accountId: null, draft: null, lines: [ASSISTANT_WELCOME], confirm: null });
   const [draft, setDraft] = useState<AssistantDraft | null>(null);
   const [lines, setLines] = useState<ChatLine[]>([ASSISTANT_WELCOME]);
   const [confirm, setConfirm] = useState<ConfirmCard | null>(null);
@@ -134,6 +146,32 @@ export function TeacherAssistantPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+
+  persistSnapshotRef.current = { accountId, draft, lines, confirm };
+
+  function clearActivityQueryParam() {
+    if (!searchParams.get("activity")) return;
+    navigate("/teacher/assistant", { replace: true });
+  }
+
+  useEffect(() => {
+    return () => {
+      if (skipPersistRef.current) return;
+      const snap = persistSnapshotRef.current;
+      if (!snap.accountId) return;
+      saveAssistantSession(snap.accountId, {
+        draft: snap.draft,
+        lines: snap.lines,
+        confirm: snap.confirm,
+      });
+      void saveTeacherAssistantSession({
+        v: 1,
+        draft: snap.draft,
+        lines: snap.lines,
+        confirm: snap.confirm,
+      });
+    };
+  }, []);
 
   useEffect(() => {
     const thread = threadRef.current;
@@ -157,25 +195,38 @@ export function TeacherAssistantPage() {
     void apiMe().then(async (actor) => {
       if (!actor?.accountId) {
         setSessionReady(true);
+        setSessionHydrated(true);
         skipPersistRef.current = false;
         return;
       }
       setAccountId(actor.accountId);
+      const applyStored = (stored: {
+        draft: AssistantDraft | null;
+        lines: ChatLine[];
+        confirm: ConfirmCard | null;
+      }) => {
+        setDraft(stored.draft);
+        setLines(stored.lines);
+        setConfirm(stored.confirm);
+        saveAssistantSession(actor.accountId, stored);
+      };
       try {
         const saved = await fetchTeacherAssistantSession();
         if (saved) {
-          setDraft(saved.draft);
-          setLines(saved.lines);
-          setConfirm(saved.confirm);
-          saveAssistantSession(actor.accountId, {
-            draft: saved.draft,
-            lines: saved.lines,
-            confirm: saved.confirm,
-          });
+          applyStored(saved);
+        } else {
+          const local = loadAssistantSession(actor.accountId);
+          if (local) applyStored(local);
         }
       } catch {
-        setError("没有从服务器恢复会话，仍可继续对话");
+        const local = loadAssistantSession(actor.accountId);
+        if (local) {
+          applyStored(local);
+        } else {
+          setError("没有从服务器恢复会话，仍可继续对话");
+        }
       }
+      setSessionHydrated(true);
       setSessionReady(true);
       skipPersistRef.current = false;
     });
@@ -194,9 +245,17 @@ export function TeacherAssistantPage() {
   }, [accountId, confirm, draft, lines, sessionReady]);
 
   useEffect(() => {
-    if (!sessionReady || !accountId || !activityLinkId) return;
-    if (draft?.activityId === activityLinkId) return;
+    if (!sessionHydrated || !accountId || !activityLinkId) return;
+    if (activityLinkHandledRef.current === activityLinkId) return;
 
+    const snap = persistSnapshotRef.current;
+    if (snap.draft?.activityId === activityLinkId) {
+      activityLinkHandledRef.current = activityLinkId;
+      clearActivityQueryParam();
+      return;
+    }
+
+    activityLinkHandledRef.current = activityLinkId;
     let cancelled = false;
     skipPersistRef.current = true;
     void (async () => {
@@ -206,6 +265,9 @@ export function TeacherAssistantPage() {
           listTopics(activityLinkId),
         ]);
         if (cancelled || activity.lifecycle !== "DRAFT") return;
+
+        const live = persistSnapshotRef.current;
+        const progress = assistantSessionHasProgress(live);
         const teacherTopics = topicList.items.filter(
           (topic): topic is import("@coursematch/shared").TeacherTopicView => "eligibleParticipantIds" in topic,
         );
@@ -214,14 +276,45 @@ export function TeacherAssistantPage() {
           role: "assistant",
           text: `已接上选课任务「${activity.title}」。若要再加一位教师的可选课，直接说「再加刘老师，时间和名额跟之前一样」即可。`,
         };
-        const nextLines = [ASSISTANT_WELCOME, hint];
-        setDraft(seeded);
-        setConfirm(null);
-        setLines(nextLines);
-        saveAssistantSession(accountId, { draft: seeded, lines: nextLines, confirm: null });
-        await saveTeacherAssistantSession({ v: 1, draft: seeded, lines: nextLines, confirm: null });
+
+        if (progress) {
+          const hasHint = live.lines.some(
+            (line) => line.role === "assistant" && LINK_ACTIVITY_HINT.test(line.text),
+          );
+          const mergedLines = hasHint ? live.lines : [...live.lines, hint];
+          const mergedDraft =
+            live.draft?.activityId != null
+              ? live.draft
+              : live.draft
+                ? { ...seeded, ...live.draft, activityId: seeded.activityId, configVersion: seeded.configVersion }
+                : seeded;
+          setDraft(mergedDraft);
+          setLines(mergedLines);
+          saveAssistantSession(accountId, {
+            draft: mergedDraft,
+            lines: mergedLines,
+            confirm: live.confirm,
+          });
+          await saveTeacherAssistantSession({
+            v: 1,
+            draft: mergedDraft,
+            lines: mergedLines,
+            confirm: live.confirm,
+          });
+        } else {
+          const nextLines = [ASSISTANT_WELCOME, hint];
+          setDraft(seeded);
+          setConfirm(null);
+          setLines(nextLines);
+          saveAssistantSession(accountId, { draft: seeded, lines: nextLines, confirm: null });
+          await saveTeacherAssistantSession({ v: 1, draft: seeded, lines: nextLines, confirm: null });
+        }
+        clearActivityQueryParam();
       } catch {
-        if (!cancelled) setError("没能接上这场选课任务，仍可照常对话");
+        if (!cancelled) {
+          activityLinkHandledRef.current = null;
+          setError("没能接上这场选课任务，仍可照常对话");
+        }
       } finally {
         if (!cancelled) skipPersistRef.current = false;
       }
@@ -230,7 +323,7 @@ export function TeacherAssistantPage() {
     return () => {
       cancelled = true;
     };
-  }, [sessionReady, accountId, activityLinkId, draft?.activityId]);
+  }, [sessionHydrated, accountId, activityLinkId, draft?.activityId]);
 
   const sessionBusy = busy || restarting;
   const hasProgress = assistantSessionHasProgress({ draft, lines, confirm });
