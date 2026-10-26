@@ -1,15 +1,23 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { clearSiteLlmCache, setSiteLlmCache } from "./llm-site-cache.js";
 import { llmStatusForTeachers, resolveLlmKey } from "./llm-env.js";
 
 describe("LLM 密钥来源", () => {
   afterEach(() => {
     delete process.env.DEEPSEEK_API_KEY;
+    clearSiteLlmCache();
   });
 
   it("服务端配置了密钥时，教师端视为已就绪", () => {
     process.env.DEEPSEEK_API_KEY = "sk-server";
     expect(llmStatusForTeachers()).toEqual({ llmReady: true, llmSource: "server", serverKeyStore: "env" });
     expect(resolveLlmKey("sk-browser")).toEqual({ key: "sk-server", source: "server" });
+  });
+
+  it("数据库站点配置优先于浏览器密钥", () => {
+    setSiteLlmCache({ apiKey: "sk-db", apiUrl: null, model: null });
+    expect(llmStatusForTeachers()).toEqual({ llmReady: true, llmSource: "server", serverKeyStore: "db" });
+    expect(resolveLlmKey("sk-browser")).toEqual({ key: "sk-db", source: "server" });
   });
 
   it("未配置服务端密钥时，才使用浏览器传来的密钥", () => {
