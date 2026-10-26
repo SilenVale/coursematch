@@ -48,4 +48,28 @@ describe("添加授课教师", () => {
     expect(result?.draft.pendingAddTopic?.instructor).toBe("刘老师");
     expect(result?.draft.pendingAddTopic?.schedule).toBe("周四 7-8 节");
   });
+
+  it("已创建后说分别教，应弹出确认添加而非合并记录", () => {
+    const draft = emptyDraft();
+    draft.activityId = "act-1";
+    draft.configVersion = 2;
+    draft.lifecycle = "DRAFT";
+    draft.title = "助理验收";
+    draft.topicWritten = true;
+    draft.rosterWritten = true;
+    draft.topic = {
+      courseName: "数据结构与算法",
+      instructor: "李老师、刘老师",
+      schedule: "周四 7-8 节",
+      capacity: 30,
+    };
+    const result = tryAddTopicTurn(
+      draft,
+      "不是这个意思，我的意思是李老师刘老师分别教这门课，是分教室的",
+      {},
+    );
+    expect(result?.confirm?.action).toBe("add_topic");
+    expect(result?.draft.topic.instructor).toBe("李老师");
+    expect(result?.draft.pendingAddTopic?.instructor).toBe("刘老师");
+  });
 });

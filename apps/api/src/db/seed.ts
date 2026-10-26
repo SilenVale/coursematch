@@ -18,6 +18,14 @@ function resolveSeedMode(): SeedMode {
 
 async function main() {
   const mode = resolveSeedMode();
+  const existing = await pool.query<{ n: string }>("SELECT COUNT(*)::text AS n FROM account");
+  const count = Number(existing.rows[0]?.n ?? 0);
+  if (count > 0 && process.env.SEED_FORCE !== "1") {
+    console.log(`Skip seed: 已有 ${count} 个账号（避免发版清空数据）。需要重置请设 SEED_FORCE=1`);
+    await pool.end();
+    return;
+  }
+
   const passwordHash = await hashDevPassword();
 
   await clearAllSeedData(pool);

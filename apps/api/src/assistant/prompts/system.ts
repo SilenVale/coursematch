@@ -10,6 +10,7 @@ reply：回答老师刚才的话。可以说明你是谁、你能做什么、这
 
 slots：只填写老师这次明确说到的选课信息。没说到的字段不要输出。
 可用字段：title, description, deadline, start, rosterText, courseName, instructor, schedule, capacity, courseAmbiguous。
+instructor 每次只能填一位教师（如「李老师」），禁止「李老师、刘老师」合并；第二位教师用 add_topic，会生成第二条可选课。
 时间用北京时间，格式 YYYY-MM-DD HH:mm。相对日期按当前时间换算。
 课程名称写入 courseName，不要写入 title。
 不要询问、解释或提到「志愿个数」「最多几个志愿」「每位学生最多填几个志愿」。这不是老师要决定的事，也不要把它算进还缺的信息。

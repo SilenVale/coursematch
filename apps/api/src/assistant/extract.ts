@@ -1,3 +1,4 @@
+import { looksLikeMultipleInstructors, primaryInstructorField, sanitizeSingleInstructor } from "./instructor-slots.js";
 import type { AssistantDraft } from "./model.js";
 
 export interface ExtractUpdate {
@@ -164,8 +165,11 @@ export function extractSlots(text: string, now: Date): ExtractUpdate {
   if (course) update.courseName = course[1].trim();
 
   const instructor =
-    text.match(/授课教师[是为：:\s]+([^\s，,。]{1,20})/) ?? text.match(/([^\s，,。]{1,8}老师)/);
-  if (instructor) update.instructor = instructor[1].trim();
+    text.match(/授课教师[是为：:\s]+([^\s，,。]{1,20})/) ??
+    text.match(/(?:再加|新增|添加|还有).*?([^\s、，,和与]{1,8}老师)/) ??
+    text.match(/([^\s、，,和与]{1,8}老师)/);
+  const single = sanitizeSingleInstructor(instructor?.[1]);
+  if (single) update.instructor = single;
 
   const schedule =
     text.match(/上课时间[是为：:\s]+([^\n，。]{2,40})/) ??
@@ -194,8 +198,9 @@ export function applyExtract(draft: AssistantDraft, update: ExtractUpdate): Assi
     next.topic.courseName = update.courseName;
     next.topicWritten = false;
   }
-  if (update.instructor) {
-    next.topic.instructor = update.instructor;
+  const instructor = sanitizeSingleInstructor(update.instructor);
+  if (instructor) {
+    next.topic.instructor = instructor;
     next.topicWritten = false;
   }
   if (update.schedule) {
@@ -207,6 +212,10 @@ export function applyExtract(draft: AssistantDraft, update: ExtractUpdate): Assi
     next.topicWritten = false;
   } else if (update.capacity) {
     next.topic.capacity = update.capacity;
+    next.topicWritten = false;
+  }
+  if (looksLikeMultipleInstructors(next.topic.instructor)) {
+    next.topic.instructor = primaryInstructorField(next.topic.instructor);
     next.topicWritten = false;
   }
   return next;
