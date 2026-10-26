@@ -45,6 +45,8 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 const KEY_STORAGE = "coursematch.deepseek.apiKey";
+const DEFAULT_LLM_URL = "https://api.deepseek.com/chat/completions";
+const DEFAULT_LLM_MODEL = "deepseek-flash";
 
 function readStoredKey(): string {
   try {
@@ -80,8 +82,8 @@ async function saveServerLlm(input: { apiKey: string; apiUrl: string; model: str
     },
     body: JSON.stringify({
       apiKey: input.apiKey,
-      apiUrl: input.apiUrl.trim() || undefined,
-      model: input.model.trim() || undefined,
+      apiUrl: input.apiUrl.trim() || DEFAULT_LLM_URL,
+      model: input.model.trim() || DEFAULT_LLM_MODEL,
     }),
   });
   const body = (await res.json()) as { data?: LlmStatus; error?: { message?: string } };
@@ -133,8 +135,8 @@ export function TeacherAssistantPage() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [keyMode, setKeyMode] = useState<"server" | "browser">("server");
   const [keyDraft, setKeyDraft] = useState("");
-  const [serverUrlDraft, setServerUrlDraft] = useState("");
-  const [serverModelDraft, setServerModelDraft] = useState("");
+  const [serverUrlDraft, setServerUrlDraft] = useState(DEFAULT_LLM_URL);
+  const [serverModelDraft, setServerModelDraft] = useState(DEFAULT_LLM_MODEL);
   const [keySaving, setKeySaving] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -318,12 +320,13 @@ export function TeacherAssistantPage() {
                       模型（可选）
                       <input
                         value={serverModelDraft}
-                        placeholder="deepseek-chat"
+                        placeholder={DEFAULT_LLM_MODEL}
                         onChange={(event) => setServerModelDraft(event.target.value)}
                       />
                     </label>
                     <p className="assistant-key-note">
-                      保存后会试连一次。Render 重启后文件可能丢失，长期请在环境变量设置 DEEPSEEK_API_KEY。
+                      保存后会试连一次，密钥写入本机 API 数据目录（不进 Git）。本地或自建服务器上填一次即可长期使用；若部署在
+                      Render 等无持久盘环境，请在环境变量设置 DEEPSEEK_API_KEY。
                     </p>
                   </>
                 )}

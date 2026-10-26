@@ -1,5 +1,5 @@
 import { assistantConfig } from "./config.js";
-import { readServerKeyFile } from "./llm-secret-file.js";
+import { readServerKeyFile, readServerLlmOptionsFile } from "./llm-secret-file.js";
 
 export type LlmKeySource = "server" | "browser" | "none";
 export type ServerKeyStore = "env" | "file" | "none";
@@ -17,8 +17,11 @@ export function readLlmRuntime(): LlmRuntime {
   const fromEnv = process.env.DEEPSEEK_API_KEY?.trim() || null;
   const fromFile = fromEnv ? null : readServerKeyFile();
   const serverKey = fromEnv || fromFile;
-  const url = process.env.DEEPSEEK_API_URL?.trim() || assistantConfig.url;
-  const model = process.env.DEEPSEEK_MODEL?.trim() || assistantConfig.model;
+  const fromFileOptions = fromFile ? readServerLlmOptionsFile() : {};
+  const url =
+    process.env.DEEPSEEK_API_URL?.trim() || fromFileOptions.apiUrl || assistantConfig.url;
+  const model =
+    process.env.DEEPSEEK_MODEL?.trim() || fromFileOptions.model || assistantConfig.model;
   return {
     url,
     model,

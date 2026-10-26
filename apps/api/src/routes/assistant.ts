@@ -3,7 +3,7 @@ import { runAgent } from "../assistant/agent.js";
 import { executeAction } from "../assistant/execute.js";
 import { llmStatusForTeachers, readLlmRuntime, resolveLlmKey } from "../assistant/llm-env.js";
 import { probeLlm } from "../assistant/llm.js";
-import { writeServerKeyFile } from "../assistant/llm-secret-file.js";
+import { writeServerKeyFile, writeServerLlmOptionsFile } from "../assistant/llm-secret-file.js";
 import type { ChatTurn } from "../assistant/memory.js";
 import { emptyDraft, type AssistantDraft } from "../assistant/model.js";
 import { step } from "../assistant/turn.js";
@@ -66,12 +66,11 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(status).send(body);
       }
       writeServerKeyFile(apiKey);
-      if (typeof req.body?.apiUrl === "string" && req.body.apiUrl.trim()) {
-        process.env.DEEPSEEK_API_URL = req.body.apiUrl.trim();
-      }
-      if (typeof req.body?.model === "string" && req.body.model.trim()) {
-        process.env.DEEPSEEK_MODEL = req.body.model.trim();
-      }
+      const savedUrl = typeof req.body?.apiUrl === "string" ? req.body.apiUrl.trim() : "";
+      const savedModel = typeof req.body?.model === "string" ? req.body.model.trim() : "";
+      writeServerLlmOptionsFile({ apiUrl: savedUrl || url, model: savedModel || model });
+      if (savedUrl) process.env.DEEPSEEK_API_URL = savedUrl;
+      if (savedModel) process.env.DEEPSEEK_MODEL = savedModel;
       return ok({ llmReady: true, llmSource: "server", serverKeyStore: "file" });
     },
   );

@@ -2,7 +2,7 @@
 
 export const assistantConfig = {
   provider: "deepseek",
-  model: "deepseek-chat",
+  model: "deepseek-flash",
   url: "https://api.deepseek.com/chat/completions",
   /** 一轮老师发言只思考一次，观察由规则在本地完成。 */
   maxModelCallsPerTurn: 1,
