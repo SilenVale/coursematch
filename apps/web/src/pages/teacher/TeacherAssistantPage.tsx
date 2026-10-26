@@ -1,34 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
-
-interface AssistantTopic {
-  courseName: string;
-  instructor: string;
-  schedule: string;
-  capacity: number | null;
-}
-
-interface AssistantDraft {
-  activityId: string | null;
-  configVersion: number | null;
-  lifecycle: "NONE" | "DRAFT" | "PUBLISHED" | "ALLOCATED";
-  title: string;
-  description: string;
-  startAt: string | null;
-  deadlineAt: string | null;
-  maxPreferences: number | null;
-  rosterText: string;
-  rosterWritten: boolean;
-  topic: AssistantTopic;
-  topicWritten: boolean;
-  pending: "create" | "publish" | "provision" | "freeze" | "allocate" | null;
-  awaiting?: string | null;
-}
-
-interface ConfirmCard {
-  action: string;
-  summary: string[];
-}
+import { apiMe } from "../../api/client";
+import {
+  ASSISTANT_WELCOME,
+  clearAssistantSession,
+  loadAssistantSession,
+  saveAssistantSession,
+  type AssistantDraft,
+  type ChatLine,
+  type ConfirmCard,
+} from "./assistantSessionStorage";
 
 interface TurnView {
   draft: AssistantDraft;
@@ -96,7 +77,7 @@ async function saveServerLlm(input: { apiKey: string; apiUrl: string; model: str
 async function postTurn(
   message: string,
   draft: AssistantDraft | null,
-  history: { role: "teacher" | "assistant"; text: string }[],
+  history: ChatLine[],
   browserKey: string,
 ): Promise<TurnView> {
   const headers: Record<string, string> = {
@@ -118,13 +99,11 @@ async function postTurn(
 }
 
 export function TeacherAssistantPage() {
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const skipPersistRef = useRef(true);
   const [draft, setDraft] = useState<AssistantDraft | null>(null);
-  const [lines, setLines] = useState<{ role: "teacher" | "assistant"; text: string }[]>([
-    {
-      role: "assistant",
-      text: "把这场选课说清楚就行。\n需要名称、截止时间、名单和一门课。\n缺的我会逐项问。\n确认之后才会写入。",
-    },
-  ]);
+  const [lines, setLines] = useState<ChatLine[]>([ASSISTANT_WELCOME]);
   const [confirm, setConfirm] = useState<ConfirmCard | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -164,6 +143,40 @@ export function TeacherAssistantPage() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    void apiMe().then((actor) => {
+      if (!actor?.accountId) {
+        setSessionReady(true);
+        skipPersistRef.current = false;
+        return;
+      }
+      setAccountId(actor.accountId);
+      const saved = loadAssistantSession(actor.accountId);
+      if (saved) {
+        setDraft(saved.draft);
+        setLines(saved.lines);
+        setConfirm(saved.confirm);
+      }
+      setSessionReady(true);
+      skipPersistRef.current = false;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!sessionReady || !accountId || skipPersistRef.current) return;
+    saveAssistantSession(accountId, { draft, lines, confirm });
+  }, [accountId, confirm, draft, lines, sessionReady]);
+
+  function startNewConversation() {
+    if (busy) return;
+    if (accountId) clearAssistantSession(accountId);
+    setDraft(null);
+    setLines([ASSISTANT_WELCOME]);
+    setConfirm(null);
+    setText("");
+    setError("");
+  }
 
   const llmReady = serverLlm || !!apiKey;
 
@@ -219,14 +232,16 @@ export function TeacherAssistantPage() {
     }
     setBusy(true);
     setError("");
-    setLines((prev) => [...prev, { role: "teacher", text: shown ?? trimmed }]);
+    const teacherLine: ChatLine = { role: "teacher", text: shown ?? trimmed };
+    const historyForTurn = [...lines, teacherLine].slice(-8);
+    setLines((prev) => [...prev, teacherLine]);
     setText("");
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
     let turn: TurnView | null = null;
     try {
-      turn = await postTurn(trimmed, draft, lines.slice(-8), apiKey);
+      turn = await postTurn(trimmed, draft, historyForTurn, apiKey);
       setDraft(turn.draft);
       setConfirm(turn.confirm);
       setLines((prev) => [...prev, { role: "assistant", text: turn!.reply }]);
@@ -447,7 +462,10 @@ export function TeacherAssistantPage() {
           >
             {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "配置 DeepSeek"}
           </button>
-          <span className="assistant-hint">Enter 发送，Shift+Enter 换行</span>
+          <button type="button" className="assistant-key-open" disabled={busy} onClick={startNewConversation}>
+            新对话
+          </button>
+          <span className="assistant-hint">对话自动保存在本浏览器 · Enter 发送</span>
           <button type="submit" className="assistant-send" disabled={busy || !text.trim()} aria-label="发送">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
               <path
