@@ -5,6 +5,12 @@ import { llmStatusForTeachers, readLlmRuntime, resolveLlmKey } from "../assistan
 import { probeLlm } from "../assistant/llm.js";
 import { upsertSiteLlmInDb } from "../assistant/llm-secret-db.js";
 import { writeServerKeyFile, writeServerLlmOptionsFile } from "../assistant/llm-secret-file.js";
+import {
+  clearTeacherSession,
+  loadTeacherSession,
+  saveTeacherSession,
+  type TeacherSessionPayload,
+} from "../assistant/teacher-session-db.js";
 import { pool } from "../db/pool.js";
 import type { ChatTurn } from "../assistant/memory.js";
 import { emptyDraft, type AssistantDraft } from "../assistant/model.js";
@@ -79,6 +85,50 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
       return ok({ llmReady: true, llmSource: "server", serverKeyStore: "db" });
     },
   );
+
+  app.get("/api/assistant/session", async (req, reply) => {
+    if (!req.actor) {
+      const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
+      return reply.code(status).send(body);
+    }
+    if (req.actor.role !== "TEACHER") {
+      const { status, body } = fail("ROLE_FORBIDDEN", "当前角色无权执行此操作", 403);
+      return reply.code(status).send(body);
+    }
+    const payload = await loadTeacherSession(pool, req.actor.accountId);
+    return ok(payload);
+  });
+
+  app.put<{ Body: TeacherSessionPayload | null }>("/api/assistant/session", async (req, reply) => {
+    if (!req.actor) {
+      const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
+      return reply.code(status).send(body);
+    }
+    if (req.actor.role !== "TEACHER") {
+      const { status, body } = fail("ROLE_FORBIDDEN", "当前角色无权执行此操作", 403);
+      return reply.code(status).send(body);
+    }
+    const body = req.body;
+    if (!body || body.v !== 1 || !Array.isArray(body.lines)) {
+      const { status, body: errBody } = fail("INVALID_INPUT", "会话格式无效", 400);
+      return reply.code(status).send(errBody);
+    }
+    await saveTeacherSession(pool, req.actor.accountId, body);
+    return ok({ saved: true });
+  });
+
+  app.delete("/api/assistant/session", async (req, reply) => {
+    if (!req.actor) {
+      const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
+      return reply.code(status).send(body);
+    }
+    if (req.actor.role !== "TEACHER") {
+      const { status, body } = fail("ROLE_FORBIDDEN", "当前角色无权执行此操作", 403);
+      return reply.code(status).send(body);
+    }
+    await clearTeacherSession(pool, req.actor.accountId);
+    return ok({ cleared: true });
+  });
 
   app.post<{ Body: TurnBody }>("/api/assistant/turns", async (req, reply) => {
     if (!req.actor) {

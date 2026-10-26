@@ -2,9 +2,13 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type Key
 import { Link } from "react-router-dom";
 import { apiMe } from "../../api/client";
 import {
+  clearTeacherAssistantSession,
+  fetchTeacherAssistantSession,
+  saveTeacherAssistantSession,
+} from "./assistantSessionApi";
+import {
   ASSISTANT_WELCOME,
   clearAssistantSession,
-  loadAssistantSession,
   saveAssistantSession,
   type AssistantDraft,
   type ChatLine,
@@ -142,18 +146,27 @@ export function TeacherAssistantPage() {
   }, []);
 
   useEffect(() => {
-    void apiMe().then((actor) => {
+    void apiMe().then(async (actor) => {
       if (!actor?.accountId) {
         setSessionReady(true);
         skipPersistRef.current = false;
         return;
       }
       setAccountId(actor.accountId);
-      const saved = loadAssistantSession(actor.accountId);
-      if (saved) {
-        setDraft(saved.draft);
-        setLines(saved.lines);
-        setConfirm(saved.confirm);
+      try {
+        const saved = await fetchTeacherAssistantSession();
+        if (saved) {
+          setDraft(saved.draft);
+          setLines(saved.lines);
+          setConfirm(saved.confirm);
+          saveAssistantSession(actor.accountId, {
+            draft: saved.draft,
+            lines: saved.lines,
+            confirm: saved.confirm,
+          });
+        }
+      } catch {
+        setError("没有从服务器恢复会话，仍可继续对话");
       }
       setSessionReady(true);
       skipPersistRef.current = false;
@@ -162,12 +175,22 @@ export function TeacherAssistantPage() {
 
   useEffect(() => {
     if (!sessionReady || !accountId || skipPersistRef.current) return;
-    saveAssistantSession(accountId, { draft, lines, confirm });
+    const payload = { draft, lines, confirm };
+    saveAssistantSession(accountId, payload);
+    const timer = window.setTimeout(() => {
+      void saveTeacherAssistantSession({ v: 1, ...payload }).catch(() => {
+        /* 离线时仍保留本浏览器副本 */
+      });
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [accountId, confirm, draft, lines, sessionReady]);
 
   function startNewConversation() {
     if (busy) return;
-    if (accountId) clearAssistantSession(accountId);
+    if (accountId) {
+      clearAssistantSession(accountId);
+      void clearTeacherAssistantSession().catch(() => undefined);
+    }
     setDraft(null);
     setLines([ASSISTANT_WELCOME]);
     setConfirm(null);
@@ -463,7 +486,7 @@ export function TeacherAssistantPage() {
           <button type="button" className="assistant-key-open" disabled={busy} onClick={startNewConversation}>
             新对话
           </button>
-          <span className="assistant-hint">对话自动保存在本浏览器 · Enter 发送</span>
+          <span className="assistant-hint">对话按账号保存在服务器 · Enter 发送</span>
           <button type="submit" className="assistant-send" disabled={busy || !text.trim()} aria-label="发送">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
               <path
