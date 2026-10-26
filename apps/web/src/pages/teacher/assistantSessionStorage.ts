@@ -111,3 +111,35 @@ export function clearAssistantSession(accountId: string): void {
     /* ignore */
   }
 }
+
+export function freshAssistantSession(): {
+  draft: AssistantDraft | null;
+  lines: ChatLine[];
+  confirm: ConfirmCard | null;
+} {
+  return { draft: null, lines: [ASSISTANT_WELCOME], confirm: null };
+}
+
+/** 是否已有可恢复的对话或草稿（仅欢迎语则视为空白）。 */
+export function assistantSessionHasProgress(input: {
+  draft: AssistantDraft | null;
+  lines: ChatLine[];
+  confirm: ConfirmCard | null;
+}): boolean {
+  if (input.confirm) return true;
+  const hasTeacherLine = input.lines.some((line) => line.role === "teacher");
+  const hasExtraAssistant =
+    input.lines.length > 1 ||
+    (input.lines.length === 1 && input.lines[0]?.text !== ASSISTANT_WELCOME.text);
+  if (hasTeacherLine || hasExtraAssistant) return true;
+  const draft = input.draft;
+  if (!draft) return false;
+  if (draft.activityId) return true;
+  if (draft.title.trim() || draft.rosterText.trim()) return true;
+  const topic = draft.topic;
+  if (topic.courseName.trim() || topic.instructor.trim() || topic.schedule.trim() || topic.capacity) {
+    return true;
+  }
+  if (draft.pending || draft.pendingAddTopic?.instructor) return true;
+  return false;
+}
