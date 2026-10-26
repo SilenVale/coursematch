@@ -1,17 +1,22 @@
 import { assistantConfig } from "./config.js";
+import { readServerKeyFile } from "./llm-secret-file.js";
 
 export type LlmKeySource = "server" | "browser" | "none";
+export type ServerKeyStore = "env" | "file" | "none";
 
 export interface LlmRuntime {
   url: string;
   model: string;
   timeoutMs: number;
   serverKey: string | null;
+  serverKeyStore: ServerKeyStore;
 }
 
-/** 服务端密钥与可选代理地址，仅通过环境变量配置，勿写入仓库。 */
+/** 服务端密钥：环境变量优先，其次本地密钥文件（由教师在站点上配置，勿进仓库）。 */
 export function readLlmRuntime(): LlmRuntime {
-  const serverKey = process.env.DEEPSEEK_API_KEY?.trim() || null;
+  const fromEnv = process.env.DEEPSEEK_API_KEY?.trim() || null;
+  const fromFile = fromEnv ? null : readServerKeyFile();
+  const serverKey = fromEnv || fromFile;
   const url = process.env.DEEPSEEK_API_URL?.trim() || assistantConfig.url;
   const model = process.env.DEEPSEEK_MODEL?.trim() || assistantConfig.model;
   return {
@@ -19,6 +24,7 @@ export function readLlmRuntime(): LlmRuntime {
     model,
     timeoutMs: assistantConfig.timeoutMs,
     serverKey,
+    serverKeyStore: fromEnv ? "env" : fromFile ? "file" : "none",
   };
 }
 
@@ -31,8 +37,14 @@ export function resolveLlmKey(headerKey: string | undefined): { key: string; sou
   return { key: "", source: "none" };
 }
 
-export function llmStatusForTeachers(): { llmReady: boolean; llmSource: LlmKeySource } {
+export function llmStatusForTeachers(): {
+  llmReady: boolean;
+  llmSource: LlmKeySource;
+  serverKeyStore: ServerKeyStore;
+} {
   const runtime = readLlmRuntime();
-  if (runtime.serverKey) return { llmReady: true, llmSource: "server" };
-  return { llmReady: false, llmSource: "none" };
+  if (runtime.serverKey) {
+    return { llmReady: true, llmSource: "server", serverKeyStore: runtime.serverKeyStore };
+  }
+  return { llmReady: false, llmSource: "none", serverKeyStore: "none" };
 }

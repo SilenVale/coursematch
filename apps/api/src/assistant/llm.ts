@@ -33,3 +33,23 @@ export async function completeChat(apiKey: string, messages: LlmMessage[]): Prom
   };
   return payload.choices?.[0]?.message?.content ?? "";
 }
+
+/** 保存前试连，失败则不写入。 */
+export async function probeLlm(apiKey: string, url: string, model: string): Promise<void> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey.trim()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      max_tokens: 16,
+      messages: [{ role: "user", content: "ping" }],
+    }),
+    signal: AbortSignal.timeout(readLlmRuntime().timeoutMs),
+  });
+  if (response.status === 401) throw new Error("DeepSeek 密钥无效");
+  if (!response.ok) throw new Error("DeepSeek 没有连上");
+}

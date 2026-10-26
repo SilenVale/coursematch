@@ -54,15 +54,40 @@ function readStoredKey(): string {
   }
 }
 
-async function fetchLlmStatus(): Promise<{ llmReady: boolean; llmSource: "server" | "browser" | "none" }> {
+type LlmStatus = {
+  llmReady: boolean;
+  llmSource: "server" | "browser" | "none";
+  serverKeyStore: "env" | "file" | "none";
+};
+
+async function fetchLlmStatus(): Promise<LlmStatus> {
   const res = await fetch("/api/assistant/llm-status", {
     credentials: "include",
     headers: { "X-CourseMatch-Request": "1" },
   });
-  const body = (await res.json()) as {
-    data?: { llmReady: boolean; llmSource: "server" | "browser" | "none" };
-  };
-  if (!res.ok || !body.data) return { llmReady: false, llmSource: "none" };
+  const body = (await res.json()) as { data?: LlmStatus };
+  if (!res.ok || !body.data) return { llmReady: false, llmSource: "none", serverKeyStore: "none" };
+  return body.data;
+}
+
+async function saveServerLlm(input: { apiKey: string; apiUrl: string; model: string }): Promise<LlmStatus> {
+  const res = await fetch("/api/assistant/llm-config", {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CourseMatch-Request": "1",
+    },
+    body: JSON.stringify({
+      apiKey: input.apiKey,
+      apiUrl: input.apiUrl.trim() || undefined,
+      model: input.model.trim() || undefined,
+    }),
+  });
+  const body = (await res.json()) as { data?: LlmStatus; error?: { message?: string } };
+  if (!res.ok || !body.data) {
+    throw new Error(body.error?.message ?? "站点密钥没有保存成功");
+  }
   return body.data;
 }
 
@@ -104,8 +129,13 @@ export function TeacherAssistantPage() {
   const [error, setError] = useState("");
   const [apiKey, setApiKey] = useState(readStoredKey);
   const [serverLlm, setServerLlm] = useState(false);
+  const [serverKeyStore, setServerKeyStore] = useState<LlmStatus["serverKeyStore"]>("none");
   const [keyOpen, setKeyOpen] = useState(false);
+  const [keyMode, setKeyMode] = useState<"server" | "browser">("server");
   const [keyDraft, setKeyDraft] = useState("");
+  const [serverUrlDraft, setServerUrlDraft] = useState("");
+  const [serverModelDraft, setServerModelDraft] = useState("");
+  const [keySaving, setKeySaving] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -125,7 +155,11 @@ export function TeacherAssistantPage() {
     void fetchLlmStatus().then((status) => {
       const fromServer = status.llmSource === "server" && status.llmReady;
       setServerLlm(fromServer);
-      if (!fromServer && !readStoredKey()) setKeyOpen(true);
+      setServerKeyStore(status.serverKeyStore);
+      if (!fromServer && !readStoredKey()) {
+        setKeyMode("server");
+        setKeyOpen(true);
+      }
     });
   }, []);
 
@@ -136,7 +170,7 @@ export function TeacherAssistantPage() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }
 
-  function saveKey(event: FormEvent) {
+  function saveBrowserKey(event: FormEvent) {
     event.preventDefault();
     const next = keyDraft.trim();
     if (!next) return;
@@ -149,6 +183,29 @@ export function TeacherAssistantPage() {
     setApiKey(next);
     setKeyDraft("");
     setKeyOpen(false);
+  }
+
+  async function saveServerKey(event: FormEvent) {
+    event.preventDefault();
+    const next = keyDraft.trim();
+    if (!next) return;
+    setKeySaving(true);
+    setError("");
+    try {
+      const status = await saveServerLlm({
+        apiKey: next,
+        apiUrl: serverUrlDraft,
+        model: serverModelDraft,
+      });
+      setServerLlm(status.llmReady && status.llmSource === "server");
+      setServerKeyStore(status.serverKeyStore);
+      setKeyDraft("");
+      setKeyOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "站点密钥没有保存成功");
+    } finally {
+      setKeySaving(false);
+    }
   }
 
   async function send(message: string, shown?: string) {
@@ -202,33 +259,98 @@ export function TeacherAssistantPage() {
     <div className="assistant">
       {keyOpen && (
         <div className="assistant-key" role="dialog" aria-modal="true" aria-labelledby="assistant-key-title">
-          <form className="assistant-key-card" onSubmit={saveKey}>
-            <h2 id="assistant-key-title">接入 DeepSeek</h2>
+          <form
+            className="assistant-key-card"
+            onSubmit={(event) => {
+              if (keyMode === "server") void saveServerKey(event);
+              else saveBrowserKey(event);
+            }}
+          >
+            <h2 id="assistant-key-title">配置 DeepSeek</h2>
             <p>
-              {serverLlm
-                ? "站点已在服务端配置模型。这里填的密钥仅在本机覆盖，一般不用改。创建和发布仍要确认后才会写入。"
-                : "密钥只保存在这台浏览器里，用来听懂你说的话。创建和发布仍要确认后才会写入。"}
+              请在这里填写，<strong>不要</strong>在 Cursor 或其它聊天里粘贴 API Key。保存后只有服务端会使用，页面和对话里都不会回显密钥。
             </p>
-            <label>
-              API Key
-              <input
-                type="password"
-                autoFocus
-                autoComplete="off"
-                value={keyDraft}
-                placeholder="sk-..."
-                onChange={(event) => setKeyDraft(event.target.value)}
-              />
-            </label>
+            <div className="assistant-key-tabs">
+              <button
+                type="button"
+                className={keyMode === "server" ? "active" : ""}
+                onClick={() => setKeyMode("server")}
+              >
+                全站共用（推荐）
+              </button>
+              <button
+                type="button"
+                className={keyMode === "browser" ? "active" : ""}
+                onClick={() => setKeyMode("browser")}
+                disabled={serverLlm && serverKeyStore === "env"}
+              >
+                仅本浏览器
+              </button>
+            </div>
+            {keyMode === "server" ? (
+              <>
+                {serverKeyStore === "env" ? (
+                  <p className="assistant-key-note">已在部署环境变量中配置，如需更换请到 Render / 服务器环境变量里改。</p>
+                ) : (
+                  <>
+                    <label>
+                      API Key
+                      <input
+                        type="password"
+                        autoFocus
+                        autoComplete="off"
+                        value={keyDraft}
+                        placeholder="sk-..."
+                        onChange={(event) => setKeyDraft(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      API 地址（可选，自建代理时填写）
+                      <input
+                        type="url"
+                        autoComplete="off"
+                        value={serverUrlDraft}
+                        placeholder="https://api.deepseek.com/chat/completions"
+                        onChange={(event) => setServerUrlDraft(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      模型（可选）
+                      <input
+                        value={serverModelDraft}
+                        placeholder="deepseek-chat"
+                        onChange={(event) => setServerModelDraft(event.target.value)}
+                      />
+                    </label>
+                    <p className="assistant-key-note">
+                      保存后会试连一次。Render 重启后文件可能丢失，长期请在环境变量设置 DEEPSEEK_API_KEY。
+                    </p>
+                  </>
+                )}
+              </>
+            ) : (
+              <label>
+                API Key（仅本机）
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={keyDraft}
+                  placeholder="sk-..."
+                  onChange={(event) => setKeyDraft(event.target.value)}
+                />
+              </label>
+            )}
             <div className="assistant-key-actions">
-              {apiKey && (
+              {(llmReady || keyDraft) && (
                 <button type="button" onClick={() => setKeyOpen(false)}>
                   稍后
                 </button>
               )}
-              <button type="submit" disabled={!keyDraft.trim()}>
-                保存
-              </button>
+              {!(keyMode === "server" && serverKeyStore === "env") && (
+                <button type="submit" disabled={!keyDraft.trim() || keySaving}>
+                  {keySaving ? "正在验证…" : keyMode === "server" ? "保存到站点" : "保存到本机"}
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -315,10 +437,12 @@ export function TeacherAssistantPage() {
           <button
             type="button"
             className="assistant-key-open"
-            onClick={() => !serverLlm && setKeyOpen(true)}
-            disabled={serverLlm}
+            onClick={() => {
+              setKeyMode(serverLlm ? "browser" : "server");
+              setKeyOpen(true);
+            }}
           >
-            {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "填写 DeepSeek 密钥"}
+            {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "配置 DeepSeek"}
           </button>
           <span className="assistant-hint">Enter 发送，Shift+Enter 换行</span>
           <button type="submit" className="assistant-send" disabled={busy || !text.trim()} aria-label="发送">

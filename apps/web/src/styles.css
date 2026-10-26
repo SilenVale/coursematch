@@ -1118,6 +1118,42 @@ a.btn:hover {
   color: var(--foreground);
 }
 
+.assistant-key-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.assistant-key-tabs button {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  padding: 8px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.assistant-key-tabs button.active {
+  border-color: var(--ring);
+  background: color-mix(in oklab, var(--ring) 12%, var(--background));
+}
+
+.assistant-key-tabs button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.assistant-key-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+.assistant-key-card strong {
+  font-weight: 560;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .assistant-msg,
   .assistant-confirm,
