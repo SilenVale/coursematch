@@ -1,3 +1,4 @@
+import { stripFalseCourseAmbiguous } from "./course-ambiguous.js";
 import type { ExtractUpdate } from "./extract.js";
 import {
   looksLikeMultipleInstructors,
@@ -176,24 +177,28 @@ export function tryDualTeacherBeforeCreate(
   draft: AssistantDraft,
   message: string,
   update: ExtractUpdate,
+  mergeDraft: (base: AssistantDraft, slotUpdate: ExtractUpdate) => AssistantDraft,
 ): TurnResult | null {
   if (draft.activityId) return null;
   const teachers = parseTeachersInText(message);
   if (teachers.length < 2) return null;
 
+  const slotUpdate = stripFalseCourseAmbiguous(draft, message, update);
+  const base = mergeDraft(draft, slotUpdate);
+
   const primary = teachers[0];
   const secondary = teachers[1];
   const topic: AssistantTopic = {
-    courseName: (update.courseName?.trim() || draft.topic.courseName).trim(),
+    courseName: (slotUpdate.courseName?.trim() || base.topic.courseName).trim(),
     instructor: primary,
-    schedule: (update.schedule?.trim() || draft.topic.schedule).trim(),
-    capacity: update.capacity ?? draft.topic.capacity,
+    schedule: (slotUpdate.schedule?.trim() || base.topic.schedule).trim(),
+    capacity: slotUpdate.capacity ?? base.topic.capacity,
   };
   const queued = buildAddTopic({ ...topic, instructor: primary }, { instructor: secondary }, message);
   if (!queued) return null;
 
   const next: AssistantDraft = {
-    ...draft,
+    ...base,
     topic,
     pendingAddTopic: queued,
   };

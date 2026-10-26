@@ -72,4 +72,23 @@ describe("添加授课教师", () => {
     expect(result?.draft.topic.instructor).toBe("李老师");
     expect(result?.draft.pendingAddTopic?.instructor).toBe("刘老师");
   });
+
+  it("已接上活动后说再加老师，应出确认添加", () => {
+    const draft = emptyDraft();
+    draft.activityId = "act-1";
+    draft.configVersion = 3;
+    draft.lifecycle = "DRAFT";
+    draft.title = "助理验收";
+    draft.topicWritten = true;
+    draft.rosterWritten = true;
+    draft.topic = {
+      courseName: "数据结构与算法",
+      instructor: "李老师",
+      schedule: "周四 7-8 节",
+      capacity: 30,
+    };
+    const result = tryAddTopicTurn(draft, "再加刘老师，时间和名额跟之前一样", {});
+    expect(result?.confirm?.action).toBe("add_topic");
+    expect(result?.draft.pendingAddTopic?.instructor).toBe("刘老师");
+  });
 });
