@@ -40,7 +40,7 @@ function readStoredKey(): string {
 type LlmStatus = {
   llmReady: boolean;
   llmSource: "server" | "browser" | "none";
-  serverKeyStore: "env" | "file" | "none";
+  serverKeyStore: "env" | "db" | "file" | "none";
 };
 
 async function fetchLlmStatus(): Promise<LlmStatus> {
@@ -332,8 +332,8 @@ export function TeacherAssistantPage() {
                       />
                     </label>
                     <p className="assistant-key-note">
-                      保存后会试连一次，密钥写入本机 API 数据目录（不进 Git）。本地或自建服务器上填一次即可长期使用；若部署在
-                      Render 等无持久盘环境，请在环境变量设置 DEEPSEEK_API_KEY。
+                      保存后会试连一次，密钥写入站点数据库（不进 Git、不回显）。全站教师共用，Render 重启后仍会自动加载；若已在环境变量配置
+                      DEEPSEEK_API_KEY 则无需在此填写。
                     </p>
                   </>
                 )}

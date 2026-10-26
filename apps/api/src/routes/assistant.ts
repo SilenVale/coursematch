@@ -3,7 +3,9 @@ import { runAgent } from "../assistant/agent.js";
 import { executeAction } from "../assistant/execute.js";
 import { llmStatusForTeachers, readLlmRuntime, resolveLlmKey } from "../assistant/llm-env.js";
 import { probeLlm } from "../assistant/llm.js";
+import { upsertSiteLlmInDb } from "../assistant/llm-secret-db.js";
 import { writeServerKeyFile, writeServerLlmOptionsFile } from "../assistant/llm-secret-file.js";
+import { pool } from "../db/pool.js";
 import type { ChatTurn } from "../assistant/memory.js";
 import { emptyDraft, type AssistantDraft } from "../assistant/model.js";
 import { step } from "../assistant/turn.js";
@@ -65,13 +67,16 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
         const { status, body } = fail("INVALID_INPUT", message, 400);
         return reply.code(status).send(body);
       }
-      writeServerKeyFile(apiKey);
       const savedUrl = typeof req.body?.apiUrl === "string" ? req.body.apiUrl.trim() : "";
       const savedModel = typeof req.body?.model === "string" ? req.body.model.trim() : "";
-      writeServerLlmOptionsFile({ apiUrl: savedUrl || url, model: savedModel || model });
+      const resolvedUrl = savedUrl || url;
+      const resolvedModel = savedModel || model;
+      await upsertSiteLlmInDb(pool, { apiKey, apiUrl: resolvedUrl, model: resolvedModel });
+      writeServerKeyFile(apiKey);
+      writeServerLlmOptionsFile({ apiUrl: resolvedUrl, model: resolvedModel });
       if (savedUrl) process.env.DEEPSEEK_API_URL = savedUrl;
       if (savedModel) process.env.DEEPSEEK_MODEL = savedModel;
-      return ok({ llmReady: true, llmSource: "server", serverKeyStore: "file" });
+      return ok({ llmReady: true, llmSource: "server", serverKeyStore: "db" });
     },
   );
 
