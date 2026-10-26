@@ -1,3 +1,4 @@
+import { isAddTopicIntent, tryAddTopicTurn } from "./add-topic.js";
 import { applyExtract, extractSlots, type ExtractUpdate } from "./extract.js";
 import { beijingToIso } from "./extract.js";
 import {
@@ -321,6 +322,10 @@ function planTurn(
   }
 
   const update = extracted ?? extractSlots(text, now);
+  if (isAddTopicIntent(text)) {
+    const addTurn = tryAddTopicTurn(draft, text, update);
+    if (addTurn) return withProgress(update, addTurn);
+  }
   let next = withDefaultStart(applyExtract(draft, update), now);
 
   if (update.courseAmbiguous) {

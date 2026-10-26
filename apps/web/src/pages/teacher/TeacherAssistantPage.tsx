@@ -19,6 +19,7 @@ interface TurnView {
 
 const ACTION_LABEL: Record<string, string> = {
   create: "确认创建",
+  add_topic: "确认添加课程",
   publish: "确认发布",
   provision: "确认开通账号",
   freeze: "确认冻结",
