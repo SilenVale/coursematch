@@ -33,6 +33,17 @@
 | `DEEPSEEK_API_URL` | （可选）OpenAI 兼容接口地址，自建代理时填写 |
 | `DEEPSEEK_MODEL` | （可选）默认 `deepseek-flash` |
 
+**全员共用 DeepSeek 额度（推荐）：** 在 Dashboard 为 Web 服务添加 `DEEPSEEK_API_KEY`（Secret）。所有登录教师打开选课助理即可使用，无需各自填 Key。
+
+若暂未配置 Dashboard Secret，可在本机执行（读取 shell 中的 `DEEPSEEK_API_KEY`，不写进 Git）：
+
+```bash
+chmod +x scripts/sync-render-deepseek-config.sh
+./scripts/sync-render-deepseek-config.sh
+```
+
+注意：脚本写入容器内密钥文件，**重新部署后可能丢失**；生产/Dev 长期仍应用 Dashboard 环境变量。
+
 ## 本地验证镜像
 
 ```bash

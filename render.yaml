@@ -31,3 +31,7 @@ services:
           property: connectionString
       - key: WEB_ORIGIN
         value: https://coursematch-dev.onrender.com
+      - key: DEEPSEEK_MODEL
+        value: deepseek-flash
+      # DEEPSEEK_API_KEY：在 Dashboard 设为 Secret（全员共用额度）。勿写入仓库。
+      # 合并部署后也可运行 scripts/sync-render-deepseek-config.sh（读本机环境变量）。
