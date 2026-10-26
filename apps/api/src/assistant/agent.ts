@@ -1,7 +1,14 @@
-import { tryAddTopicBeforeCreate, tryAddTopicTurn } from "./add-topic.js";
+import {
+  isAddTopicIntent,
+  isDualTeacherMessage,
+  tryAddTopicBeforeCreate,
+  tryAddTopicTurn,
+  tryDualTeacherBeforeCreate,
+} from "./add-topic.js";
 import { normalizeModelJson } from "./deepseek.js";
 import type { ExtractUpdate } from "./extract.js";
 import { extractSlots } from "./extract.js";
+import { sanitizeSingleInstructor } from "./instructor-slots.js";
 import { completeChat, type LlmMessage } from "./llm.js";
 import { remember, type AssistantMemory, type ChatTurn } from "./memory.js";
 import { emptyDraft, isCancelMessage, isConfirmMessage, type AssistantDraft, type TurnResult } from "./model.js";
@@ -123,9 +130,16 @@ function isAside(message: string): boolean {
   return ASIDE.test(message) && !/截止|开始|名额|志愿|学号/.test(message);
 }
 
+function mergeExtract(rule: ExtractUpdate, model: ExtractUpdate): ExtractUpdate {
+  const instructor =
+    sanitizeSingleInstructor(model.instructor) ?? sanitizeSingleInstructor(rule.instructor);
+  return { ...rule, ...model, ...(instructor ? { instructor } : {}) };
+}
+
 function speak(reply: string, gap: string | null): string {
   const clean = reply
-    .replace(/[^。！!\n]*(?:已经|已)(?:创建|发布|冻结|分配|写入|开通)[^。！!\n]*[。！!\n]?/g, "")
+    .replace(/[^。！!\n]*(?:已经|已)(?:创建|发布|冻结|分配|写入|开通|记录)[^。！!\n]*[。！!\n]?/g, "")
+    .replace(/[^。！!\n]*授课教师[^。！!\n]*[、，][^。！!\n]*老师[^。！!\n]*[。！!\n]?/g, "")
     .replace(/[^。！!\n]*(?:志愿个数|最多[^。！!\n]{0,16}志愿)[^。！!\n]*[。！!\n]?/g, "")
     .replace(/sk-[A-Za-z0-9_-]{8,}/g, "")
     .trim()
@@ -166,10 +180,17 @@ function observe(draft: AssistantDraft, message: string, decision: Decision, now
     );
   }
 
-  const addBefore = tryAddTopicBeforeCreate(draft, message, update);
-  if (addBefore) return withProgress(update, addBefore);
-  const addTurn = tryAddTopicTurn(draft, message, update);
-  if (addTurn) return withProgress(update, addTurn);
+  const forTeachers = isAddTopicIntent(message) || isDualTeacherMessage(message);
+  const teacherUpdate = forTeachers
+    ? mergeExtract(extractSlots(message, now), update)
+    : update;
+  const dualBefore = tryDualTeacherBeforeCreate(draft, message, teacherUpdate);
+  if (dualBefore) return dualBefore;
+  const addBefore = tryAddTopicBeforeCreate(draft, message, teacherUpdate);
+  if (addBefore) return withProgress(teacherUpdate, addBefore);
+  const addTurn = tryAddTopicTurn(draft, message, teacherUpdate);
+  if (addTurn?.confirm) return addTurn;
+  if (addTurn) return withProgress(teacherUpdate, addTurn);
   let next = applySlots(draft, update, now);
   if (
     draft.awaiting === "title" &&

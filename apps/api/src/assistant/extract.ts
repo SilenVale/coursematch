@@ -1,4 +1,4 @@
-import { sanitizeSingleInstructor } from "./instructor-slots.js";
+import { looksLikeMultipleInstructors, primaryInstructorField, sanitizeSingleInstructor } from "./instructor-slots.js";
 import type { AssistantDraft } from "./model.js";
 
 export interface ExtractUpdate {
@@ -212,6 +212,10 @@ export function applyExtract(draft: AssistantDraft, update: ExtractUpdate): Assi
     next.topicWritten = false;
   } else if (update.capacity) {
     next.topic.capacity = update.capacity;
+    next.topicWritten = false;
+  }
+  if (looksLikeMultipleInstructors(next.topic.instructor)) {
+    next.topic.instructor = primaryInstructorField(next.topic.instructor);
     next.topicWritten = false;
   }
   return next;

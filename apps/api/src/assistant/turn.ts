@@ -1,4 +1,10 @@
-import { isAddTopicIntent, tryAddTopicBeforeCreate, tryAddTopicTurn } from "./add-topic.js";
+import {
+  isAddTopicIntent,
+  isDualTeacherMessage,
+  tryAddTopicBeforeCreate,
+  tryAddTopicTurn,
+  tryDualTeacherBeforeCreate,
+} from "./add-topic.js";
 import { applyExtract, extractSlots, type ExtractUpdate } from "./extract.js";
 import { beijingToIso } from "./extract.js";
 import {
@@ -113,7 +119,9 @@ function acceptedLine(update: ExtractUpdate, draft: AssistantDraft): string | nu
   if (update.startAt) parts.push(`开始时间已记下：${formatBeijing(update.startAt)}`);
   if (update.rosterText) parts.push("名单已导入成功");
   if (update.courseName) parts.push(`课程已记下：${draft.topic.courseName}`);
-  if (update.instructor) parts.push(`授课教师已记下：${draft.topic.instructor}`);
+  if (update.instructor && draft.topic.instructor.trim()) {
+    parts.push(`授课教师已记下：${draft.topic.instructor}`);
+  }
   if (update.schedule) parts.push(`上课时间已记下：${draft.topic.schedule}`);
   if (update.capacity) parts.push(`名额已记下：${draft.topic.capacity}`);
   return parts.length > 0 ? parts.join("，") : null;
@@ -337,10 +345,13 @@ function planTurn(
   }
 
   const update = extracted ?? extractSlots(text, now);
-  if (isAddTopicIntent(text)) {
+  const dualBefore = tryDualTeacherBeforeCreate(draft, text, update);
+  if (dualBefore) return dualBefore;
+  if (isAddTopicIntent(text) || isDualTeacherMessage(text)) {
     const beforeCreate = tryAddTopicBeforeCreate(draft, text, update);
     if (beforeCreate) return beforeCreate;
     const addTurn = tryAddTopicTurn(draft, text, update);
+    if (addTurn?.confirm) return addTurn;
     if (addTurn) return withProgress(update, addTurn);
   }
   let next = withDefaultStart(applyExtract(draft, update), now);
