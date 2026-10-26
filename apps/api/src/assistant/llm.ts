@@ -1,0 +1,55 @@
+import { readLlmRuntime } from "./llm-env.js";
+
+export interface LlmMessage {
+  role: "system" | "user";
+  content: string;
+}
+
+/** 模型封装。教学示例里的模拟模型，这里换成 DeepSeek 的对话接口。 */
+export async function completeChat(apiKey: string, messages: LlmMessage[]): Promise<string> {
+  const runtime = readLlmRuntime();
+  const response = await fetch(runtime.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey.trim()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: runtime.model,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages,
+    }),
+    signal: AbortSignal.timeout(runtime.timeoutMs),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("DeepSeek 密钥无效");
+    throw new Error("DeepSeek 没有连上");
+  }
+
+  const payload = (await response.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  return payload.choices?.[0]?.message?.content ?? "";
+}
+
+/** 保存前试连，失败则不写入。 */
+export async function probeLlm(apiKey: string, url: string, model: string): Promise<void> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey.trim()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      max_tokens: 16,
+      messages: [{ role: "user", content: "ping" }],
+    }),
+    signal: AbortSignal.timeout(readLlmRuntime().timeoutMs),
+  });
+  if (response.status === 401) throw new Error("DeepSeek 密钥无效");
+  if (!response.ok) throw new Error("DeepSeek 没有连上");
+}
