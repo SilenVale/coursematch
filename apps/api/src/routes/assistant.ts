@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { runAgent } from "../assistant/agent.js";
 import { executeAction } from "../assistant/execute.js";
+import { llmStatusForTeachers, resolveLlmKey } from "../assistant/llm-env.js";
 import type { ChatTurn } from "../assistant/memory.js";
 import { emptyDraft, type AssistantDraft } from "../assistant/model.js";
 import { step } from "../assistant/turn.js";
@@ -14,6 +15,18 @@ interface TurnBody {
 }
 
 export const assistantRoutes: FastifyPluginAsync = async (app) => {
+  app.get("/api/assistant/llm-status", async (req, reply) => {
+    if (!req.actor) {
+      const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
+      return reply.code(status).send(body);
+    }
+    if (req.actor.role !== "TEACHER") {
+      const { status, body } = fail("ROLE_FORBIDDEN", "当前角色无权执行此操作", 403);
+      return reply.code(status).send(body);
+    }
+    return ok(llmStatusForTeachers());
+  });
+
   app.post<{ Body: TurnBody }>("/api/assistant/turns", async (req, reply) => {
     if (!req.actor) {
       const { status, body } = fail("UNAUTHENTICATED", "请先登录", 401);
@@ -28,7 +41,7 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
     const current = req.body?.draft ?? emptyDraft();
     const now = new Date();
     const headerKey = req.headers["x-coursematch-model-key"];
-    const apiKey = typeof headerKey === "string" ? headerKey.trim() : "";
+    const { key: apiKey } = resolveLlmKey(typeof headerKey === "string" ? headerKey : undefined);
     let planned;
     if (apiKey) {
       try {

@@ -54,20 +54,33 @@ function readStoredKey(): string {
   }
 }
 
+async function fetchLlmStatus(): Promise<{ llmReady: boolean; llmSource: "server" | "browser" | "none" }> {
+  const res = await fetch("/api/assistant/llm-status", {
+    credentials: "include",
+    headers: { "X-CourseMatch-Request": "1" },
+  });
+  const body = (await res.json()) as {
+    data?: { llmReady: boolean; llmSource: "server" | "browser" | "none" };
+  };
+  if (!res.ok || !body.data) return { llmReady: false, llmSource: "none" };
+  return body.data;
+}
+
 async function postTurn(
   message: string,
   draft: AssistantDraft | null,
   history: { role: "teacher" | "assistant"; text: string }[],
-  apiKey: string,
+  browserKey: string,
 ): Promise<TurnView> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-CourseMatch-Request": "1",
+  };
+  if (browserKey) headers["X-CourseMatch-Model-Key"] = browserKey;
   const res = await fetch("/api/assistant/turns", {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CourseMatch-Request": "1",
-      "X-CourseMatch-Model-Key": apiKey,
-    },
+    headers,
     body: JSON.stringify({ message, draft, history }),
   });
   const body = (await res.json()) as { data?: TurnView; error?: { message?: string } };
@@ -90,7 +103,8 @@ export function TeacherAssistantPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [apiKey, setApiKey] = useState(readStoredKey);
-  const [keyOpen, setKeyOpen] = useState(() => !readStoredKey());
+  const [serverLlm, setServerLlm] = useState(false);
+  const [keyOpen, setKeyOpen] = useState(false);
   const [keyDraft, setKeyDraft] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -106,6 +120,16 @@ export function TeacherAssistantPage() {
   useEffect(() => {
     if (confirm) confirmBtnRef.current?.focus();
   }, [confirm]);
+
+  useEffect(() => {
+    void fetchLlmStatus().then((status) => {
+      const fromServer = status.llmSource === "server" && status.llmReady;
+      setServerLlm(fromServer);
+      if (!fromServer && !readStoredKey()) setKeyOpen(true);
+    });
+  }, []);
+
+  const llmReady = serverLlm || !!apiKey;
 
   function resizeInput(el: HTMLTextAreaElement) {
     el.style.height = "auto";
@@ -130,7 +154,7 @@ export function TeacherAssistantPage() {
   async function send(message: string, shown?: string) {
     const trimmed = message.trim();
     if (!trimmed || busy) return;
-    if (!apiKey) {
+    if (!llmReady) {
       setKeyOpen(true);
       return;
     }
@@ -180,7 +204,11 @@ export function TeacherAssistantPage() {
         <div className="assistant-key" role="dialog" aria-modal="true" aria-labelledby="assistant-key-title">
           <form className="assistant-key-card" onSubmit={saveKey}>
             <h2 id="assistant-key-title">接入 DeepSeek</h2>
-            <p>密钥只保存在这台浏览器里，用来听懂你说的话。创建和发布仍要确认后才会写入。</p>
+            <p>
+              {serverLlm
+                ? "站点已在服务端配置模型。这里填的密钥仅在本机覆盖，一般不用改。创建和发布仍要确认后才会写入。"
+                : "密钥只保存在这台浏览器里，用来听懂你说的话。创建和发布仍要确认后才会写入。"}
+            </p>
             <label>
               API Key
               <input
@@ -284,8 +312,13 @@ export function TeacherAssistantPage() {
               <path d="M7 1.5V12.5M1.5 7H12.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </button>
-          <button type="button" className="assistant-key-open" onClick={() => setKeyOpen(true)}>
-            {apiKey ? "DeepSeek 已接入" : "填写 DeepSeek 密钥"}
+          <button
+            type="button"
+            className="assistant-key-open"
+            onClick={() => !serverLlm && setKeyOpen(true)}
+            disabled={serverLlm}
+          >
+            {serverLlm ? "DeepSeek 由站点提供" : apiKey ? "DeepSeek 已接入" : "填写 DeepSeek 密钥"}
           </button>
           <span className="assistant-hint">Enter 发送，Shift+Enter 换行</span>
           <button type="submit" className="assistant-send" disabled={busy || !text.trim()} aria-label="发送">

@@ -1,4 +1,4 @@
-import { assistantConfig } from "./config.js";
+import { readLlmRuntime } from "./llm-env.js";
 
 export interface LlmMessage {
   role: "system" | "user";
@@ -7,19 +7,20 @@ export interface LlmMessage {
 
 /** 模型封装。教学示例里的模拟模型，这里换成 DeepSeek 的对话接口。 */
 export async function completeChat(apiKey: string, messages: LlmMessage[]): Promise<string> {
-  const response = await fetch(assistantConfig.url, {
+  const runtime = readLlmRuntime();
+  const response = await fetch(runtime.url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey.trim()}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: assistantConfig.model,
+      model: runtime.model,
       temperature: 0,
       response_format: { type: "json_object" },
       messages,
     }),
-    signal: AbortSignal.timeout(assistantConfig.timeoutMs),
+    signal: AbortSignal.timeout(runtime.timeoutMs),
   });
 
   if (!response.ok) {
