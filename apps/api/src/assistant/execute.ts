@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import { looksLikeMultipleInstructors } from "./instructor-slots.js";
 import type { AssistantDraft, ConfirmAction, ConfirmCard } from "./model.js";
 
 interface ErrorBody {
@@ -264,6 +265,13 @@ async function executeCreate(
   }
 
   if (!next.topicWritten) {
+    if (looksLikeMultipleInstructors(next.topic.instructor)) {
+      return {
+        draft: { ...next, pending: "create" },
+        reply:
+          "授课教师只能一位一条可选课，不能写成「李老师、刘老师」合并。请先确认创建第一位；创建后再说「再加刘老师」分别添加。",
+      };
+    }
     const createdTopic = await call(
       app,
       req,

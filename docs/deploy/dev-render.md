@@ -25,7 +25,7 @@
 |------|------|
 | `DATABASE_URL` | Render Postgres 连接串（Blueprint 注入） |
 | `WEB_ORIGIN` | 浏览器访问的 HTTPS 源，与 Cookie/CORS 一致 |
-| `RUN_SEED` | `1` 时容器启动执行 seed（**慎用**；日常建议 `0`） |
+| `RUN_SEED` | `1` 时容器启动**尝试** seed；**已有账号则自动跳过**（避免发版清空选课与聊天记录）。强制重置：`SEED_FORCE=1` |
 | `SEED_MODE` | `accounts`（仅账号）/ `ready`（+teacher_ready 数据）/ `full`（+teacher01 旧示例） |
 | `SERVE_WEB` | `1` 由 API 托管静态前端 |
 | `PORT` | Render 自动设置，勿改 |

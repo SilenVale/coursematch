@@ -1,4 +1,5 @@
 import type { ExtractUpdate } from "./extract.js";
+import { sanitizeSingleInstructor } from "./instructor-slots.js";
 import type { AssistantDraft, AssistantTopic, TurnResult } from "./model.js";
 
 export function isAddTopicIntent(text: string): boolean {
@@ -7,15 +8,16 @@ export function isAddTopicIntent(text: string): boolean {
 
 function parseInstructorHint(text: string): string | null {
   const labeled =
-    text.match(/就是\s*([^，,。\s]{1,10})/)?.[1] ??
-    text.match(/新增.*?([^\s，,。]{1,8}老师)/)?.[1] ??
-    text.match(/([^\s，,。]{1,6}老师)/)?.[1];
+    text.match(/(?:再加|新增|添加|还有|就是).*?([^\s、，,和与]{1,8}老师)/)?.[1] ??
+    text.match(/就是\s*([^，,。\s、]{1,10})/)?.[1];
   if (!labeled) return null;
-  return labeled.endsWith("老师") ? labeled : `${labeled}老师`;
+  const withSuffix = labeled.endsWith("老师") ? labeled : `${labeled}老师`;
+  return sanitizeSingleInstructor(withSuffix) ?? null;
 }
 
 export function buildAddTopic(base: AssistantTopic, update: ExtractUpdate, text: string): AssistantTopic | null {
-  const instructor = (update.instructor?.trim() || parseInstructorHint(text) || "").trim();
+  const raw = update.instructor?.trim() || parseInstructorHint(text) || "";
+  const instructor = sanitizeSingleInstructor(raw);
   if (!instructor) return null;
   const sameTime = /时间一样|同样时间|时间不变|同上/.test(text);
   return {

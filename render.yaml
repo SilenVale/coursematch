@@ -22,7 +22,7 @@ services:
       - key: SERVE_WEB
         value: "1"
       - key: RUN_SEED
-        value: "1"
+        value: "0"
       - key: SESSION_HOURS
         value: "24"
       - key: DATABASE_URL

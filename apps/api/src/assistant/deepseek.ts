@@ -1,4 +1,5 @@
 import { beijingToIso, type ExtractUpdate } from "./extract.js";
+import { sanitizeSingleInstructor } from "./instructor-slots.js";
 
 function clockToIso(value: string): string | undefined {
   const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
@@ -38,7 +39,7 @@ export function normalizeModelJson(raw: unknown): ExtractUpdate {
   if (roster) update.rosterText = roster;
   const courseName = asText(body.courseName, 30);
   if (courseName) update.courseName = courseName;
-  const instructor = asText(body.instructor, 20);
+  const instructor = sanitizeSingleInstructor(asText(body.instructor, 20));
   if (instructor) update.instructor = instructor;
   const schedule = asText(body.schedule, 40);
   if (schedule) update.schedule = schedule;

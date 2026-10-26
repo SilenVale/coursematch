@@ -9,6 +9,8 @@ export async function hashDevPassword(): Promise<string> {
 
 /** 全量 seed 前清空业务数据（开发/演示库专用，勿指向生产用户库）。 */
 export async function clearAllSeedData(pool: Pool): Promise<void> {
+  await pool.query("DELETE FROM assistant_teacher_session");
+  await pool.query("DELETE FROM assistant_site_llm");
   await pool.query("DELETE FROM operation_log");
   await pool.query("DELETE FROM allocation_result");
   await pool.query("DELETE FROM allocation_batch");
