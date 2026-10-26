@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import type { AssistantDraft, ConfirmAction } from "./model.js";
+import type { AssistantDraft, ConfirmAction, ConfirmCard } from "./model.js";
 
 interface ErrorBody {
   error?: {
@@ -112,7 +112,7 @@ export async function executeAction(
   req: FastifyRequest,
   action: ConfirmAction,
   draft: AssistantDraft,
-): Promise<{ draft: AssistantDraft; reply: string }> {
+): Promise<{ draft: AssistantDraft; reply: string; confirm?: ConfirmCard | null }> {
   if (action === "create") return executeCreate(app, req, draft);
   if (action === "add_topic") return executeAddTopic(app, req, draft);
   if (!draft.activityId) {
@@ -192,8 +192,9 @@ async function executeCreate(
   app: FastifyInstance,
   req: FastifyRequest,
   draft: AssistantDraft,
-): Promise<{ draft: AssistantDraft; reply: string }> {
+): Promise<{ draft: AssistantDraft; reply: string; confirm?: ConfirmCard | null }> {
   let next = { ...draft, topic: { ...draft.topic }, pending: null as AssistantDraft["pending"] };
+  const queuedAdd = draft.pendingAddTopic;
 
   if (!next.activityId) {
     const created = await call(
@@ -288,8 +289,22 @@ async function executeCreate(
     next = { ...next, topicWritten: true, configVersion: data?.configVersion ?? next.configVersion };
   }
 
+  if (queuedAdd?.instructor) {
+    const summary = [
+      `在「${next.title}」中新增可选课：`,
+      `${queuedAdd.instructor} · ${queuedAdd.courseName}`,
+      `${queuedAdd.schedule}，名额 ${queuedAdd.capacity}`,
+    ];
+    return {
+      draft: { ...next, pending: "add_topic", pendingAddTopic: queuedAdd },
+      reply: `草稿已创建。请确认是否添加 ${queuedAdd.instructor} 的课程。`,
+      confirm: { action: "add_topic", summary },
+    };
+  }
+
   return {
     draft: next,
     reply: `草稿已创建。可以打开课程设置核对同一场选课。要让学生填报，请说「发布」。`,
+    confirm: null,
   };
 }
