@@ -1,3 +1,4 @@
+import { extractMarksTwoCourses } from "./course-ambiguous.js";
 import { looksLikeMultipleInstructors, primaryInstructorField, sanitizeSingleInstructor } from "./instructor-slots.js";
 import type { AssistantDraft } from "./model.js";
 
@@ -123,6 +124,7 @@ export function extractSlots(text: string, now: Date): ExtractUpdate {
 
   const title =
     text.match(/活动名称[是为：:\s]+([^\n，。]{1,40})/) ??
+    text.match(/活动名[称]?[是为：:\s]+([^\n，。]{1,40})/) ??
     text.match(/(?:选课任务|(?<!课程)名称)[是为：:\s]+([^\n，。]{1,40})/) ??
     text.match(/叫[「“"]([^」”"]+)[」”"]/);
   if (title) update.title = title[1].trim();
@@ -152,16 +154,18 @@ export function extractSlots(text: string, now: Date): ExtractUpdate {
   if (roster) update.rosterText = roster;
 
   const capacities = [...text.matchAll(/名额\s*(\d+)/g)];
-  if (capacities.length > 1) {
+  if (extractMarksTwoCourses(text)) {
     update.courseAmbiguous = true;
     update.capacity = null;
-  } else if (capacities.length === 1) {
+  } else if (capacities.length >= 1) {
     update.capacity = Number(capacities[0][1]);
     const named = text.match(/([^\s，,。\n]{2,20})名额\s*\d+/);
     if (named && !named[1].includes("志愿")) update.courseName = named[1].replace(/^课程/, "");
   }
 
-  const course = text.match(/课程(?:名称)?[是为：:\s]+([^\s，,。]{1,30})/);
+  const course =
+    text.match(/课程(?:名称)?[是为：:\s]+([^\s，,。]{1,30})/) ??
+    text.match(/课程([^，,、。\n\s\d]{2,30})/);
   if (course) update.courseName = course[1].trim();
 
   const instructor =

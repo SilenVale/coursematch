@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { apiMe } from "../../api/client";
+import { draftFromExistingActivity } from "./assistantActivitySeed";
+import { getActivity, listTopics } from "./configApi";
 import {
   clearTeacherAssistantSession,
   fetchTeacherAssistantSession,
@@ -106,6 +108,8 @@ async function postTurn(
 }
 
 export function TeacherAssistantPage() {
+  const [searchParams] = useSearchParams();
+  const activityLinkId = searchParams.get("activity")?.trim() ?? "";
   const [accountId, setAccountId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const skipPersistRef = useRef(true);
@@ -188,6 +192,45 @@ export function TeacherAssistantPage() {
     }, 400);
     return () => window.clearTimeout(timer);
   }, [accountId, confirm, draft, lines, sessionReady]);
+
+  useEffect(() => {
+    if (!sessionReady || !accountId || !activityLinkId) return;
+    if (draft?.activityId === activityLinkId) return;
+
+    let cancelled = false;
+    skipPersistRef.current = true;
+    void (async () => {
+      try {
+        const [activity, topicList] = await Promise.all([
+          getActivity(activityLinkId),
+          listTopics(activityLinkId),
+        ]);
+        if (cancelled || activity.lifecycle !== "DRAFT") return;
+        const teacherTopics = topicList.items.filter(
+          (topic): topic is import("@coursematch/shared").TeacherTopicView => "eligibleParticipantIds" in topic,
+        );
+        const seeded = draftFromExistingActivity(activity, teacherTopics);
+        const hint: ChatLine = {
+          role: "assistant",
+          text: `已接上选课任务「${activity.title}」。若要再加一位教师的可选课，直接说「再加刘老师，时间和名额跟之前一样」即可。`,
+        };
+        const nextLines = [ASSISTANT_WELCOME, hint];
+        setDraft(seeded);
+        setConfirm(null);
+        setLines(nextLines);
+        saveAssistantSession(accountId, { draft: seeded, lines: nextLines, confirm: null });
+        await saveTeacherAssistantSession({ v: 1, draft: seeded, lines: nextLines, confirm: null });
+      } catch {
+        if (!cancelled) setError("没能接上这场选课任务，仍可照常对话");
+      } finally {
+        if (!cancelled) skipPersistRef.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionReady, accountId, activityLinkId, draft?.activityId]);
 
   const sessionBusy = busy || restarting;
   const hasProgress = assistantSessionHasProgress({ draft, lines, confirm });

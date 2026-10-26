@@ -5,6 +5,7 @@ import {
   tryAddTopicTurn,
   tryDualTeacherBeforeCreate,
 } from "./add-topic.js";
+import { stripFalseCourseAmbiguous } from "./course-ambiguous.js";
 import { applyExtract, extractSlots, type ExtractUpdate } from "./extract.js";
 import { beijingToIso } from "./extract.js";
 import {
@@ -136,8 +137,29 @@ export function withProgress(update: ExtractUpdate, result: TurnResult): TurnRes
   return { ...result, reply: `${accepted}。${result.reply}` };
 }
 
-function readyToCreate(draft: AssistantDraft): boolean {
+export function readyToCreate(draft: AssistantDraft): boolean {
   return nextGap(draft) === null && !draft.activityId;
+}
+
+export function wantsConfirmCreate(message: string): boolean {
+  return /确认创建|我确认创建|信息齐了.*确认/.test(message);
+}
+
+export function offerCreateIfReady(draft: AssistantDraft, message: string): TurnResult | null {
+  if (!wantsConfirmCreate(message) || !readyToCreate(draft)) return null;
+  const next = { ...draft, pending: "create" as const };
+  const summary = createSummary(next);
+  if (next.pendingAddTopic?.instructor) {
+    summary.push(
+      `创建成功后待添加：${next.pendingAddTopic.instructor} · ${next.pendingAddTopic.courseName}`,
+    );
+  }
+  return {
+    draft: next,
+    reply: "信息齐了，请确认创建。",
+    confirm: card("create", summary),
+    execute: null,
+  };
 }
 
 function intent(message: string): ConfirmAction | null {
@@ -344,8 +366,11 @@ function planTurn(
     return replyForIntent(draft, wanted);
   }
 
-  const update = extracted ?? extractSlots(text, now);
-  const dualBefore = tryDualTeacherBeforeCreate(draft, text, update);
+  const rawUpdate = extracted ?? extractSlots(text, now);
+  const update = stripFalseCourseAmbiguous(draft, text, rawUpdate);
+  const mergeDraft = (base: AssistantDraft, slotUpdate: ExtractUpdate) =>
+    withDefaultStart(applyExtract(base, slotUpdate), now);
+  const dualBefore = tryDualTeacherBeforeCreate(draft, text, update, mergeDraft);
   if (dualBefore) return dualBefore;
   if (isAddTopicIntent(text) || isDualTeacherMessage(text)) {
     const beforeCreate = tryAddTopicBeforeCreate(draft, text, update);
@@ -354,7 +379,10 @@ function planTurn(
     if (addTurn?.confirm) return addTurn;
     if (addTurn) return withProgress(update, addTurn);
   }
-  let next = withDefaultStart(applyExtract(draft, update), now);
+  let next = mergeDraft(draft, update);
+
+  const confirmOffer = offerCreateIfReady(next, text);
+  if (confirmOffer) return withProgress(update, confirmOffer);
 
   if (update.courseAmbiguous) {
     return {

@@ -7,6 +7,7 @@ import {
 } from "./add-topic.js";
 import { normalizeModelJson } from "./deepseek.js";
 import type { ExtractUpdate } from "./extract.js";
+import { stripFalseCourseAmbiguous } from "./course-ambiguous.js";
 import { extractSlots } from "./extract.js";
 import { sanitizeSingleInstructor } from "./instructor-slots.js";
 import { completeChat, type LlmMessage } from "./llm.js";
@@ -19,6 +20,7 @@ import {
   applySlots,
   currentGapQuestion,
   finishTurn,
+  offerCreateIfReady,
   proposeWrite,
   reviewAfterSlots,
   step,
@@ -171,7 +173,8 @@ function preferCurrentSlot(draft: AssistantDraft, message: string, update: Extra
 
 function observe(draft: AssistantDraft, message: string, decision: Decision, now: Date): TurnResult {
   const aside = isAside(message);
-  const update = aside ? {} : preferCurrentSlot(draft, message, normalizeModelJson(decision.slots));
+  const rawUpdate = aside ? {} : preferCurrentSlot(draft, message, normalizeModelJson(decision.slots));
+  const update = stripFalseCourseAmbiguous(draft, message, rawUpdate);
   if (update.courseAmbiguous) {
     const next = applySlots(draft, update, now);
     return finishTurn(
@@ -180,11 +183,12 @@ function observe(draft: AssistantDraft, message: string, decision: Decision, now
     );
   }
 
+  const mergeDraft = (base: AssistantDraft, slotUpdate: ExtractUpdate) => applySlots(base, slotUpdate, now);
   const forTeachers = isAddTopicIntent(message) || isDualTeacherMessage(message);
   const teacherUpdate = forTeachers
-    ? mergeExtract(extractSlots(message, now), update)
+    ? stripFalseCourseAmbiguous(draft, message, mergeExtract(extractSlots(message, now), update))
     : update;
-  const dualBefore = tryDualTeacherBeforeCreate(draft, message, teacherUpdate);
+  const dualBefore = tryDualTeacherBeforeCreate(draft, message, teacherUpdate, mergeDraft);
   if (dualBefore) return dualBefore;
   const addBefore = tryAddTopicBeforeCreate(draft, message, teacherUpdate);
   if (addBefore) return withProgress(teacherUpdate, addBefore);
@@ -192,6 +196,8 @@ function observe(draft: AssistantDraft, message: string, decision: Decision, now
   if (addTurn?.confirm) return addTurn;
   if (addTurn) return withProgress(teacherUpdate, addTurn);
   let next = applySlots(draft, update, now);
+  const confirmOffer = offerCreateIfReady(next, message);
+  if (confirmOffer) return withProgress(update, confirmOffer);
   if (
     draft.awaiting === "title" &&
     next.title &&
