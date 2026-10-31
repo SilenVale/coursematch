@@ -26,7 +26,7 @@ function surnameBeforeTeacher(segment: string): string | null {
   if (!m) return null;
   const surname = m[1];
   if (/^(思|意|的|我|想|说|由|为)$/.test(surname)) return null;
-  if (surname.length === 2 && /[的是我思意]/.test(surname[0])) return null;
+  if (surname.length === 2 && /[的是我思意加再新增添请找和与还就]/.test(surname[0])) return null;
   return surname;
 }
 

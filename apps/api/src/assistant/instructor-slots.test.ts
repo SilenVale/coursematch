@@ -15,4 +15,8 @@ describe("instructor-slots", () => {
   it("parses two teachers from continuous text", () => {
     expect(parseTeachersInText("李老师刘老师分别教")).toEqual(["李老师", "刘老师"]);
   });
+
+  it("does not treat 再加 prefix as part of surname", () => {
+    expect(parseTeachersInText("再加刘老师，时间和名额跟之前一样")).toEqual([]);
+  });
 });
