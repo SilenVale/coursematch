@@ -221,7 +221,7 @@ npm run build -w @coursematch/allocation
 npm test
 ```
 
-预期：allocation 2 条 + API 52 条通过；集成测试文件显示为 skipped（无 `DATABASE_URL` 时自动跳过）。
+预期：allocation 2 条 + API 55 条通过；集成测试文件显示为 skipped（无 `DATABASE_URL` 时自动跳过）。
 
 ### 接口集成测试（需 PostgreSQL）
 
@@ -233,7 +233,7 @@ set -a && source .env && set +a           # 提供 DATABASE_URL（Windows 见下
 npm run test:api:integration
 ```
 
-预期：`Tests 47 passed (47)`。
+预期：`Tests 60 passed (60)`，即 M2 主用例 47 条 + 开通账号 13 条。
 
 **Windows（PowerShell）：**
 
@@ -244,10 +244,14 @@ npm run test:api:integration
 
 **说明：**
 
-- 测试文件为 `apps/api/src/routes/activities/config.integration.test.ts`，用例编号与本表 `TC-M2-001` ~ `TC-M2-047` 一一对应；
+- M2 主用例文件为 `apps/api/src/routes/activities/config.integration.test.ts`，编号与本表 `TC-M2-001` ~ `TC-M2-047` 一一对应；
+- 开通账号用例文件为 `apps/api/src/routes/activities/provision-accounts.integration.test.ts`，编号 `TC-M2-PROV-001` ~ `TC-M2-PROV-013`，见第九节；
 - 套件在 `beforeAll` 中依序应用全部迁移，并清空业务表，**可重复运行**；
+- 两个集成文件会操作同一个数据库，`apps/api/vitest.config.ts` 已限制为单线程串行执行，避免并行删数据 / 撞唯一键；
 - 未设置 `DATABASE_URL` 时 `npm run test:api:integration` 会直接报错退出（避免「跳过」被误读为「通过」）；
-- 未设置 `DATABASE_URL` 时 `npm test` 会把该文件标记为 skipped，不影响其余测试。
+- 未设置 `DATABASE_URL` 时 `npm test` 会把这两个文件标记为 skipped，不影响其余测试。
+
+---
 
 ---
 
@@ -263,3 +267,36 @@ npm run test:api:integration
 | 发布前检查 | 配置齐备后 | 五项全绿 → 发布成功 → 题目区锁定、发布按钮禁用 | 通过 |
 | 作废 | 填原因后确认 | 状态变「已作废」，版本 +1 | 通过 |
 | 路由守卫 | 教师访问 `/student/results` | 重定向回首页 | 通过 |
+
+---
+
+## 九、补充：教师一键开通学生账号（TC-M2-PROV-001 ~ 013）
+
+> 该能力由 `c6ab994` 引入，代码位于 M2 的 `config.ts` 与 `lib/provision-student-accounts.ts`，
+> 但**不在原始契约 `api-contracts.ts` 中**。本节为实现现状的补充覆盖，不改变契约结论。
+
+接口：`POST /api/activities/:activityId/participants/provision-accounts`（无请求体）
+
+| 编号 | 用例 | 预期 | 结论 |
+|---|---|---|---|
+| TC-M2-PROV-001 | 为名单内全部未开通学生建号 | 200；`provisionedCount=3`；`account` 增 3 行 | 通过 |
+| TC-M2-PROV-002 | identifier 为学号、角色为 STUDENT | 每行 `identifier === student_number` 且 `role='STUDENT'` | 通过 |
+| TC-M2-PROV-003 | 返回默认密码提示且可登录 | 200；用返回的 `defaultPasswordHint` 真实登录成功 | 通过 |
+| TC-M2-PROV-004 | 重复调用幂等 | 第二次 `provisionedCount=0`；`account` 行数不变 | 通过 |
+| TC-M2-PROV-005 | 只补开缺失账号 | 已建号学生的 `account.id` 不变，只新建缺失的 2 个 | 通过 |
+| TC-M2-PROV-006 | 只处理本活动名单内学生 | 名单外学生不受影响 | 通过 |
+| TC-M2-PROV-007 | 学生调用 | 403 `ROLE_FORBIDDEN` | 通过 |
+| TC-M2-PROV-008 | 他人活动 | 404 `RESOURCE_NOT_FOUND` | 通过 |
+| TC-M2-PROV-009 | 未登录 | 401 / 403 / 404（`role-guard` 先拦，不泄露存在性） | 通过 |
+| TC-M2-PROV-010 | 缺 CSRF 头 | 403 `REQUEST_ORIGIN_FORBIDDEN` | 通过 |
+| TC-M2-PROV-011 | 已发布活动仍可开通 | 200；且 `config_version` **不递增** | 通过 |
+| TC-M2-PROV-012 | 空名单调用 | 200；`provisionedCount=0`，不报错 | 通过 |
+| TC-M2-PROV-013 | 不存在的活动 | 404 | 通过 |
+
+### 测试中确认的接口行为（供 team 讨论）
+
+1. **无请求体但需 CSRF 头**：该接口是 POST 且无 body。若前端误带 `Content-Type: application/json` 而无 body，Fastify 会先返回 400 `FST_ERR_CTP_EMPTY_JSON_BODY`，而不是进入业务逻辑。前端调用时不要设置该头。
+2. **未走 `requireDraft`**：已发布活动仍可开通账号（TC-M2-PROV-011 已固定该行为）。这对「补开账号」有实际意义，但与 M2「发布后配置冻结」的不变量不同，建议在接口注释或契约中显式说明这是例外。
+3. **不递增 `config_version`**：开通账号不属于配置变更，版本号不变。该行为已被测试固定，若日后调整需同步修改本用例。
+
+---
