@@ -8,7 +8,7 @@ export function CreateCoursePage() {
     <div className="card">
       <CreateActivityForm
         onCreated={(created) => navigate(`/teacher/courses/${created.activityId}/configure`)}
-        onCancel={() => navigate("/")}
+        onCancel={() => navigate("/app")}
       />
     </div>
   );

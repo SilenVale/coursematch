@@ -43,7 +43,7 @@ export function CourseLayout() {
   return (
     <div className="course-layout">
       <div className="course-layout-head">
-        <Link to="/" className="text-muted course-back">
+        <Link to="/app" className="text-muted course-back">
           ← 返回工作台
         </Link>
         <h1 className="page-head">{title || "加载中…"}</h1>

@@ -135,7 +135,7 @@ export function FreezeAllocationPage() {
       if (!reason.trim()) throw new Error("请填写关闭原因");
       if (!activityId) return;
       await apiClose(activityId, reason.trim());
-      navigate("/");
+      navigate("/app");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import type { ActorView } from "@coursematch/shared";
 import { apiLogout, apiMe } from "./api/client";
 import { AppShell } from "./layout/AppShell";
+import { LandingPage } from "./pages/landing/LandingPage";
 import { LoginPage } from "./pages/Login";
 import { ActivityConfigurePage } from "./pages/teacher/ActivityConfigPage";
 import { CourseLayout } from "./pages/teacher/CourseLayout";
@@ -24,12 +25,12 @@ function AuthenticatedRoutes({
   return (
     <AppShell actor={actor} onLogout={onLogout}>
       <Routes>
-        <Route path="/" element={<HomePage actor={actor} />} />
+        <Route path="/app" element={<HomePage actor={actor} />} />
         <Route path="/teacher/courses/new" element={<CreateCoursePage />} />
         <Route
           path="/teacher/assistant"
           element={
-            actor.role === "TEACHER" ? <TeacherAssistantPage /> : <Navigate to="/" replace />
+            actor.role === "TEACHER" ? <TeacherAssistantPage /> : <Navigate to="/app" replace />
           }
         />
         <Route path="/teacher/courses/:activityId" element={<CourseLayout />}>
@@ -38,21 +39,23 @@ function AuthenticatedRoutes({
           <Route path="configure" element={<ActivityConfigurePage />} />
           <Route path="results" element={<FreezeAllocationPage />} />
         </Route>
-        <Route path="/teacher/config" element={<Navigate to="/" replace />} />
-        <Route path="/teacher/freeze" element={<Navigate to="/" replace />} />
+        <Route path="/teacher/config" element={<Navigate to="/app" replace />} />
+        <Route path="/teacher/freeze" element={<Navigate to="/app" replace />} />
         <Route
           path="/student/preferences"
           element={
-            actor.role === "STUDENT" ? <PreferencesPage /> : <Navigate to="/" replace />
+            actor.role === "STUDENT" ? <PreferencesPage /> : <Navigate to="/app" replace />
           }
         />
         <Route
           path="/student/results"
           element={
-            actor.role === "STUDENT" ? <ResultsPage /> : <Navigate to="/" replace />
+            actor.role === "STUDENT" ? <ResultsPage /> : <Navigate to="/app" replace />
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Navigate to="/app" replace />} />
+        <Route path="/login" element={<Navigate to="/app" replace />} />
+        <Route path="*" element={<Navigate to="/app" replace />} />
       </Routes>
     </AppShell>
   );
@@ -69,28 +72,40 @@ export function App() {
       .catch(() => setActor(null));
   }, []);
 
+  const handleLogin = (a: ActorView) => {
+    setActor(a);
+    navigate("/app", { replace: true });
+  };
+
   const handleLogout = async () => {
     await apiLogout();
     setActor(null);
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   if (actor === undefined) {
     return <div className="loading-screen">加载中…</div>;
   }
 
-  if (!actor) {
-    return (
-      <Routes>
-        <Route path="/login" element={<LoginPage onLogin={setActor} />} />
-        <Route path="*" element={<Navigate to="/login" replace state={{ from: location }} />} />
-      </Routes>
-    );
-  }
-
-  if (location.pathname === "/login") {
-    return <Navigate to="/" replace />;
-  }
-
-  return <AuthenticatedRoutes actor={actor} onLogout={handleLogout} />;
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/login"
+        element={
+          actor ? <Navigate to="/app" replace /> : <LoginPage onLogin={handleLogin} />
+        }
+      />
+      <Route
+        path="*"
+        element={
+          actor ? (
+            <AuthenticatedRoutes actor={actor} onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace state={{ from: location }} />
+          )
+        }
+      />
+    </Routes>
+  );
 }

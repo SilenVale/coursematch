@@ -4,12 +4,12 @@ import type { ActorView } from "@coursematch/shared";
 import { UserMenu } from "../components/UserMenu";
 
 const TEACHER_NAV = [
-  { to: "/", label: "工作台", end: true },
+  { to: "/app", label: "工作台", end: true },
   { to: "/teacher/assistant", label: "选课助理" },
 ] as const;
 
 const STUDENT_NAV = [
-  { to: "/", label: "工作台", end: true },
+  { to: "/app", label: "工作台", end: true },
   { to: "/student/preferences", label: "选课填报" },
   { to: "/student/results", label: "我的结果" },
 ] as const;
