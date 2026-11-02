@@ -12,11 +12,10 @@ import {
   type TeacherSessionPayload,
 } from "../assistant/teacher-session-db.js";
 import { findCatalogByNormalizedName } from "../catalog/catalog-db.js";
-import { catalogCourseHint } from "../catalog/catalog-hint.js";
+import { catalogConfirmWithLookup, shouldOfferCatalogConfirm, step } from "../assistant/turn.js";
 import { pool } from "../db/pool.js";
 import type { ChatTurn } from "../assistant/memory.js";
 import { emptyDraft, type AssistantDraft } from "../assistant/model.js";
-import { step } from "../assistant/turn.js";
 import { fail, ok } from "../lib/response.js";
 
 interface TurnBody {
@@ -167,19 +166,14 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
       planned = step(current, message, now);
     }
     if (!planned.execute) {
-      const prevCourse = (current.topic?.courseName ?? "").trim();
-      const nextCourse = (planned.draft.topic?.courseName ?? "").trim();
-      if (nextCourse && nextCourse !== prevCourse && !planned.reply.includes("教务目录")) {
-        const found = await findCatalogByNormalizedName(pool, nextCourse);
-        const hint = catalogCourseHint(nextCourse, !!found);
-        planned = {
-          ...planned,
-          draft: {
-            ...planned.draft,
-            catalogCourseId: found?.id ?? null,
-          },
-          reply: planned.reply ? `${planned.reply}\n${hint}` : hint,
-        };
+      const d = planned.draft;
+      if (shouldOfferCatalogConfirm(d) || d.pending === "catalog") {
+        const name = d.topic.courseName.trim();
+        const found = name ? await findCatalogByNormalizedName(pool, name) : null;
+        planned = catalogConfirmWithLookup(
+          { ...d, catalogCourseId: found?.id ?? null },
+          !!found,
+        );
       }
       return ok(planned);
     }

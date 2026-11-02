@@ -12,16 +12,27 @@ describe("双教师创建", () => {
       "20261001,甲,2026,计算机科学,1班",
       "课程数据结构与算法，李老师刘老师分别带班，周四7-8节，名额30",
     ].join("\n");
-    const result = step(emptyDraft(), msg, NOW);
+    const first = step(emptyDraft(), msg, NOW);
+    expect(first.confirm?.action).toBe("catalog");
+    const ack = step(first.draft, "确认", NOW);
+    expect(ack.draft.catalogAcknowledged).toBe(true);
+    const result = step(ack.draft, "信息齐了，确认创建", NOW);
     expect(result.confirm?.action).toBe("create");
     expect(result.draft.topic.instructor).toBe("李老师");
     expect(result.draft.pendingAddTopic?.instructor).toBe("刘老师");
-    expect(result.draft.title).toBe("双师验收1026");
+    expect(result.draft.title).toBe("数据结构与算法");
   });
 
   it("信息齐了确认创建不应被 courseAmbiguous 误伤", () => {
-    let draft = emptyDraft();
-    draft = step(draft, "活动名称是双师演示，截止 2026-12-01 18:00，开始 2026-10-27 09:00", NOW).draft;
+    let draft = step(
+      emptyDraft(),
+      "数据结构，截止 2026-12-01 18:00，开始 2026-10-27 09:00",
+      NOW,
+    ).draft;
+    expect(step(emptyDraft(), "数据结构，截止 2026-12-01 18:00，开始 2026-10-27 09:00", NOW).confirm?.action).toBe(
+      "catalog",
+    );
+    draft = step(draft, "确认", NOW).draft;
     draft = step(
       draft,
       "学号,姓名,入学年,专业,班级\n20261001,甲,2026,计算机科学,1班\n课程数据结构，李老师刘老师分别教，周四7-8节，名额30",

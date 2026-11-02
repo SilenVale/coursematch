@@ -51,7 +51,13 @@ function withDefaultStart(draft: AssistantDraft, now: Date): AssistantDraft {
 }
 
 function describeGap(draft: AssistantDraft): { code: AwaitingSlot; question: string } | null {
-  if (!draft.title.trim()) return { code: "title", question: "这场选课叫什么名字？" };
+  if (!draft.topic.courseName.trim()) {
+    return {
+      code: "courseName",
+      question: "先选教务目录里的课种：要开哪一门课？例如「软件工程」。",
+    };
+  }
+  if (!draft.catalogAcknowledged) return null;
   if (!draft.deadlineAt) {
     return {
       code: "deadline",
@@ -70,7 +76,6 @@ function describeGap(draft: AssistantDraft): { code: AwaitingSlot; question: str
       question: "把参与名单按五列贴过来，或点左下角加号导入 CSV：学号,姓名,入学年,专业,班级。专业要和已有学籍一致。",
     };
   }
-  if (!draft.topic.courseName.trim()) return { code: "courseName", question: "要开哪一门课？" };
   if (!draft.topic.instructor.trim()) return { code: "instructor", question: "这门课的授课教师是谁？" };
   if (!draft.topic.schedule.trim()) {
     return { code: "schedule", question: "上课时间是什么？例如「周二 3-4 节」。" };
@@ -84,8 +89,53 @@ function nextGap(draft: AssistantDraft): string | null {
 }
 
 function stamp(result: TurnResult): TurnResult {
-  const awaiting = result.confirm || result.execute ? null : (describeGap(result.draft)?.code ?? null);
+  const awaiting =
+    result.confirm || result.execute || result.draft.pending === "catalog"
+      ? null
+      : (describeGap(result.draft)?.code ?? null);
   return { ...result, draft: { ...result.draft, awaiting } };
+}
+
+export function shouldOfferCatalogConfirm(draft: AssistantDraft): boolean {
+  return (
+    draft.topic.courseName.trim().length > 0 &&
+    !draft.catalogAcknowledged &&
+    draft.pending !== "catalog"
+  );
+}
+
+function buildCatalogConfirm(draft: AssistantDraft): TurnResult {
+  const name = draft.topic.courseName.trim();
+  return {
+    draft: { ...draft, pending: "catalog" },
+    reply: `请确认课种「${name}」。确认后将自动匹配或登记教务目录。`,
+    confirm: card("catalog", [`课种：${name}`, "确认后继续填写开始/截止时间与名单。"]),
+    execute: null,
+  };
+}
+
+export function buildCatalogConfirmForDraft(draft: AssistantDraft): TurnResult {
+  return buildCatalogConfirm(draft);
+}
+
+/** 路由层用 DB 查询结果润色课种确认话术。 */
+export function catalogConfirmWithLookup(
+  draft: AssistantDraft,
+  existsInCatalog: boolean,
+): TurnResult {
+  const name = draft.topic.courseName.trim();
+  const reply = existsInCatalog
+    ? `教务目录里已有「${name}」。确认在本活动下开设你的教学班吗？`
+    : `教务目录里还没有「${name}」。确认登记新课种并继续吗？`;
+  const summary = existsInCatalog
+    ? [`课种：${name}（目录已有）`, "确认后在本活动下新增你的教学班。"]
+    : [`课种：${name}（新课种）`, "确认后写入教务目录并继续配置。"];
+  return {
+    draft: { ...draft, pending: "catalog" },
+    reply,
+    confirm: card("catalog", summary),
+    execute: null,
+  };
 }
 
 function rosterSummary(text: string): string {
@@ -101,8 +151,9 @@ function rosterSummary(text: string): string {
 }
 
 function createSummary(draft: AssistantDraft): string[] {
+  const activityLabel = draft.title.trim() || draft.topic.courseName;
   return [
-    `名称：${draft.title}`,
+    `课种/活动：${activityLabel}`,
     `时间：${formatBeijing(draft.startAt!)} → ${formatBeijing(draft.deadlineAt!)}`,
     rosterSummary(draft.rosterText),
     `课程：${draft.topic.instructor} · ${draft.topic.courseName}，${draft.topic.schedule}，名额 ${draft.topic.capacity}`,
@@ -115,11 +166,11 @@ function card(action: ConfirmAction, summary: string[]): ConfirmCard {
 
 function acceptedLine(update: ExtractUpdate, draft: AssistantDraft): string | null {
   const parts: string[] = [];
-  if (update.title) parts.push(`名称已记下：${draft.title}`);
+  if (update.courseName) parts.push(`课种已记下：${draft.topic.courseName}`);
+  else if (update.title) parts.push(`名称已记下：${draft.title}`);
   if (update.deadlineAt) parts.push(`截止时间已记下：${formatBeijing(update.deadlineAt)}`);
   if (update.startAt) parts.push(`开始时间已记下：${formatBeijing(update.startAt)}`);
   if (update.rosterText) parts.push("名单已导入成功");
-  if (update.courseName) parts.push(`课程已记下：${draft.topic.courseName}`);
   if (update.instructor && draft.topic.instructor.trim()) {
     parts.push(`授课教师已记下：${draft.topic.instructor}`);
   }
@@ -138,7 +189,11 @@ export function withProgress(update: ExtractUpdate, result: TurnResult): TurnRes
 }
 
 export function readyToCreate(draft: AssistantDraft): boolean {
-  return nextGap(draft) === null && !draft.activityId;
+  return (
+    draft.catalogAcknowledged &&
+    nextGap(draft) === null &&
+    !draft.activityId
+  );
 }
 
 export function wantsConfirmCreate(message: string): boolean {
@@ -327,7 +382,12 @@ function planTurn(
   const draft = inputDraft ?? emptyDraft();
   const text = message.trim();
   if (!text) {
-    return { draft, reply: "说说这场选课的名称、开始与截止时间、名单和课程。", confirm: null, execute: null };
+    return {
+      draft,
+      reply: "说说要开的课种、开始与截止时间、名单，以及你的授课时间与名额。",
+      confirm: null,
+      execute: null,
+    };
   }
 
   if (isCancelMessage(text)) {
@@ -340,6 +400,23 @@ function planTurn(
   }
 
   if (isConfirmMessage(text)) {
+    if (draft.pending === "catalog") {
+      const acknowledged: AssistantDraft = {
+        ...draft,
+        pending: null,
+        catalogAcknowledged: true,
+        title: draft.topic.courseName.trim(),
+      };
+      const gap = nextGap(acknowledged);
+      return stamp({
+        draft: acknowledged,
+        reply: gap
+          ? `已确认课种「${acknowledged.title}」。现在继续：${gap}`
+          : `已确认课种「${acknowledged.title}」。`,
+        confirm: null,
+        execute: null,
+      });
+    }
     if (!draft.pending) {
       if (!draft.activityId && readyToCreate(draft)) {
         const next = { ...draft, pending: "create" as const };
@@ -367,19 +444,44 @@ function planTurn(
   }
 
   const rawUpdate = extracted ?? extractSlots(text, now);
+  if (rawUpdate.title && !rawUpdate.courseName && !draft.catalogAcknowledged) {
+    rawUpdate.courseName = rawUpdate.title;
+    delete rawUpdate.title;
+  }
+  const bareCourse =
+    !rawUpdate.courseName &&
+    !rawUpdate.rosterText &&
+    !rawUpdate.deadlineAt &&
+    text.length >= 2 &&
+    text.length <= 20 &&
+    !/[,，。\n]/.test(text) &&
+    !/截止|开始|学号|名额|老师|教师|节|志愿|活动|导入|确认|发布|我要|我想|进行|选课|一场|怎么|帮忙|名单|改好|好的|嗯|^行$/.test(
+      text,
+    ) &&
+    /^[\u4e00-\u9fa5a-zA-Z0-9（）()·\s]{2,20}$/.test(text);
+  if (bareCourse && (draft.awaiting === "courseName" || !draft.topic.courseName.trim())) {
+    rawUpdate.courseName = text.trim();
+  }
   const update = stripFalseCourseAmbiguous(draft, text, rawUpdate);
   const mergeDraft = (base: AssistantDraft, slotUpdate: ExtractUpdate) =>
     withDefaultStart(applyExtract(base, slotUpdate), now);
+  let next = mergeDraft(draft, update);
   const dualBefore = tryDualTeacherBeforeCreate(draft, text, update, mergeDraft);
-  if (dualBefore) return dualBefore;
+  if (dualBefore?.confirm) return withProgress(update, dualBefore);
+  if (dualBefore) next = dualBefore.draft;
   if (isAddTopicIntent(text) || isDualTeacherMessage(text)) {
-    const beforeCreate = tryAddTopicBeforeCreate(draft, text, update);
-    if (beforeCreate) return beforeCreate;
+    if (!isDualTeacherMessage(text)) {
+      const beforeCreate = tryAddTopicBeforeCreate(next, text, update);
+      if (beforeCreate) return withProgress(update, beforeCreate);
+    }
     const addTurn = tryAddTopicTurn(draft, text, update);
     if (addTurn?.confirm) return addTurn;
     if (addTurn) return withProgress(update, addTurn);
   }
-  let next = mergeDraft(draft, update);
+
+  if (shouldOfferCatalogConfirm(next)) {
+    return withProgress(update, buildCatalogConfirm(next));
+  }
 
   const confirmOffer = offerCreateIfReady(next, text);
   if (confirmOffer) return withProgress(update, confirmOffer);

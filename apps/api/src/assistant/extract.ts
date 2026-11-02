@@ -122,6 +122,27 @@ function extractRoster(text: string): string | undefined {
 export function extractSlots(text: string, now: Date): ExtractUpdate {
   const update: ExtractUpdate = {};
 
+  const firstLine = text.split(/\n/)[0]?.trim() ?? "";
+  if (
+    firstLine &&
+    /^[\u4e00-\u9fa5a-zA-Z0-9（）()·]{2,30}$/.test(firstLine) &&
+    !firstLine.includes("学号") &&
+    !/我想|我要|进行|选课|一场|新的|一轮|帮忙|怎么|可以|开始|名单|改好/.test(firstLine) &&
+    !/^(好的|确认|嗯|行|可以|OK|ok)$/.test(firstLine)
+  ) {
+    update.courseName = firstLine;
+  }
+
+  const leadingCourse = text.match(/^([\u4e00-\u9fa5a-zA-Z0-9（）()·]{2,20})[，,]/);
+  if (
+    leadingCourse &&
+    !/活动|截止|开始|学号|信息|确认|最多|志愿|导入|名单|老师|教师|名额|发布|冻结/.test(
+      leadingCourse[1],
+    )
+  ) {
+    update.courseName = leadingCourse[1].trim();
+  }
+
   const title =
     text.match(/活动名称[是为：:\s]+([^\n，。]{1,40})/) ??
     text.match(/活动名[称]?[是为：:\s]+([^\n，。]{1,40})/) ??
@@ -189,7 +210,15 @@ export function applyExtract(draft: AssistantDraft, update: ExtractUpdate): Assi
     topic: { ...draft.topic },
     pending: null,
   };
-  if (update.title) next.title = update.title;
+  if (update.title) {
+    if (!draft.catalogAcknowledged && !draft.topic.courseName.trim()) {
+      next.topic.courseName = update.title;
+      next.catalogAcknowledged = false;
+      next.catalogCourseId = null;
+    } else {
+      next.title = update.title;
+    }
+  }
   if (update.description !== undefined) next.description = update.description;
   if (update.startAt) next.startAt = update.startAt;
   if (update.deadlineAt) next.deadlineAt = update.deadlineAt;
@@ -199,6 +228,10 @@ export function applyExtract(draft: AssistantDraft, update: ExtractUpdate): Assi
     next.rosterWritten = false;
   }
   if (update.courseName) {
+    if (update.courseName !== draft.topic.courseName) {
+      next.catalogAcknowledged = false;
+      next.catalogCourseId = null;
+    }
     next.topic.courseName = update.courseName;
     next.topicWritten = false;
   }

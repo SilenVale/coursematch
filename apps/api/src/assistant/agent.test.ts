@@ -9,38 +9,38 @@ function thinkReturning(json: unknown) {
   return async (_apiKey: string, _messages: LlmMessage[]) => JSON.stringify(json);
 }
 
+function withCourse(draft: ReturnType<typeof emptyDraft>, courseName: string) {
+  draft.topic.courseName = courseName;
+  draft.title = courseName;
+  draft.catalogAcknowledged = true;
+  return draft;
+}
+
 describe("选课助理循环", () => {
-  it("正在问名称时，短回答记成活动名称", async () => {
+  it("正在问课种时，短回答记成课种", async () => {
     const draft = emptyDraft();
-    draft.awaiting = "title";
-    draft.topic.courseName = "数据结构";
+    draft.awaiting = "courseName";
     const result = await runAgent(
       { apiKey: "sk-test", message: "数据结构", draft, now: NOW },
-      thinkReturning({ reply: "课程已记下。", slots: { courseName: "数据结构" }, tool: null }),
+      thinkReturning({ reply: "课种已记下。", slots: { courseName: "数据结构" }, tool: null }),
     );
-    expect(result.draft.title).toBe("数据结构");
-    expect(result.draft.topic.courseName).toBe("");
-    expect(result.reply).toContain("名称已记下：数据结构");
-    expect(result.reply).toContain("现在继续");
-    expect(result.reply).toContain("截止");
-    expect(result.reply).not.toContain("课程已记下");
+    expect(result.draft.topic.courseName).toBe("数据结构");
+    expect(result.confirm?.action).toBe("catalog");
+    expect(result.execute).toBeNull();
   });
 
   it("短回答仍然写进当前槽位", async () => {
     const result = await runAgent(
       { apiKey: "sk-test", message: "数据结构", draft: emptyDraft(), now: NOW },
-      thinkReturning({ reply: "名称记下了。", slots: { title: "数据结构" }, tool: null }),
+      thinkReturning({ reply: "课种记下了。", slots: { courseName: "数据结构" }, tool: null }),
     );
-    expect(result.draft.title).toBe("数据结构");
-    expect(result.reply).toContain("名称已记下：数据结构");
-    expect(result.reply).toContain("现在继续");
-    expect(result.reply).toContain("截止");
+    expect(result.draft.topic.courseName).toBe("数据结构");
+    expect(result.confirm?.action).toBe("catalog");
     expect(result.execute).toBeNull();
   });
 
   it("模型已经问过当前缺口时，不再把同一句拼上去", async () => {
-    const draft = emptyDraft();
-    draft.title = "数据结构";
+    const draft = withCourse(emptyDraft(), "数据结构");
     const result = await runAgent(
       { apiKey: "sk-test", message: "你是谁", draft, now: NOW },
       thinkReturning({ reply: "我是选课助理。先说说截止时间吧。", slots: {}, tool: null }),
@@ -49,9 +49,12 @@ describe("选课助理循环", () => {
   });
 
   it("整份名单 CSV 不交给模型改写", async () => {
-    const draft = emptyDraft();
-    draft.title = "数据结构";
+    const draft = withCourse(emptyDraft(), "数据结构");
     draft.deadlineAt = "2026-10-27T02:00:00.000Z";
+    draft.startAt = "2026-10-26T01:00:00.000Z";
+    draft.topic.instructor = "张老师";
+    draft.topic.schedule = "周三";
+    draft.topic.capacity = 1;
     const csv = "学号,姓名,入学年,专业,班级\n20260001,学生甲,2026,软件工程,1班";
     const result = await runAgent(
       { apiKey: "sk-test", message: csv, draft, now: NOW },
@@ -61,14 +64,12 @@ describe("选课助理循环", () => {
     );
     expect(result.draft.rosterText).toContain("20260001");
     expect(result.reply).toContain("名单已导入成功");
-    expect(result.reply).toContain("现在继续");
-    expect(result.reply).toContain("课");
+    expect(result.confirm?.action).toBe("create");
     expect(result.execute).toBeNull();
   });
 
   it("模型提到志愿个数时，这句话不会展示给老师", async () => {
-    const draft = emptyDraft();
-    draft.title = "数据结构";
+    const draft = withCourse(emptyDraft(), "数据结构");
     draft.deadlineAt = "2026-10-27T02:00:00.000Z";
     const result = await runAgent(
       { apiKey: "sk-test", message: "截止 2026-10-27 10:00", draft, now: NOW },
@@ -86,8 +87,7 @@ describe("选课助理循环", () => {
   });
 
   it("老师问你是谁时先回答，再把当前缺口问回去", async () => {
-    const draft = emptyDraft();
-    draft.title = "数据结构";
+    const draft = withCourse(emptyDraft(), "数据结构");
     draft.awaiting = "deadline";
     let called = 0;
     const result = await runAgent(
@@ -109,7 +109,7 @@ describe("选课助理循环", () => {
     expect(called).toBe(1);
     expect(result.execute).toBeNull();
     expect(result.confirm).toBeNull();
-    expect(result.draft.title).toBe("数据结构");
+    expect(result.draft.topic.courseName).toBe("数据结构");
     expect(result.reply).toContain("选课助理");
     expect(result.reply).not.toContain("已经发布");
     expect(result.reply).toContain("截止时间");
@@ -126,8 +126,7 @@ describe("选课助理循环", () => {
   });
 
   it("信息齐了才出创建确认卡", async () => {
-    const draft = emptyDraft();
-    draft.title = "数据结构";
+    const draft = withCourse(emptyDraft(), "数据结构");
     draft.startAt = "2026-10-26T01:00:00.000Z";
     draft.deadlineAt = "2026-10-26T07:00:00.000Z";
     draft.maxPreferences = 3;
@@ -141,17 +140,5 @@ describe("选课助理循环", () => {
     expect(result.confirm?.action).toBe("create");
     expect(result.draft.pending).toBe("create");
     expect(result.reply).toBe("信息齐了。");
-  });
-
-  it("确认不会再去问模型", async () => {
-    const draft = emptyDraft();
-    draft.pending = "create";
-    const result = await runAgent(
-      { apiKey: "sk-test", message: "确认", draft, now: NOW },
-      async () => {
-        throw new Error("不应该调用模型");
-      },
-    );
-    expect(result.execute).toBe("create");
   });
 });

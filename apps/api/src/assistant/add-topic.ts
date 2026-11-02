@@ -58,11 +58,11 @@ export function buildAddTopic(base: AssistantTopic, update: ExtractUpdate, text:
 
 function gapsFilledForCreate(draft: AssistantDraft): boolean {
   return !!(
-    draft.title.trim() &&
+    draft.catalogAcknowledged &&
+    draft.topic.courseName.trim() &&
     draft.deadlineAt &&
     draft.startAt &&
     draft.rosterText.trim() &&
-    draft.topic.courseName.trim() &&
     draft.topic.instructor.trim() &&
     draft.topic.schedule.trim() &&
     draft.topic.capacity
@@ -205,7 +205,7 @@ export function tryDualTeacherBeforeCreate(
 
   if (gapsFilledForCreate(next)) {
     const summary = [
-      `名称：${next.title}`,
+      `课种：${next.topic.courseName}`,
       `课程：${primary} · ${topic.courseName}，${topic.schedule}，名额 ${topic.capacity}`,
       `创建成功后待添加：${queued.instructor} · ${queued.courseName}（${queued.schedule}，名额 ${queued.capacity}）`,
     ];

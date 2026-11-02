@@ -27,6 +27,7 @@ interface TurnView {
 }
 
 const ACTION_LABEL: Record<string, string> = {
+  catalog: "确认课种",
   create: "确认创建",
   add_topic: "确认添加课程",
   publish: "确认发布",

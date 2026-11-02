@@ -12,7 +12,9 @@ slots：只填写老师这次明确说到的选课信息。没说到的字段不
 可用字段：title, description, deadline, start, rosterText, courseName, instructor, schedule, capacity, courseAmbiguous。
 instructor 每次只能填一位教师（如「李老师」），禁止「李老师、刘老师」合并；第二位教师用 add_topic，会生成第二条可选课。
 时间用北京时间，格式 YYYY-MM-DD HH:mm。相对日期按当前时间换算。
-课程名称写入 courseName，不要写入 title。
+第一条永远是课种 courseName（与教务目录一致）；活动名称与课种相同，写入 courseName，不要单独问「活动叫什么」。
+老师说出课种后，必须先等系统弹出「确认课种/教务目录」并确认，再填截止、开始、名单、教师、时间、名额。
+名单和授课信息齐了之后，进入「确认创建」，不要再次询问要开哪一门课。
 不要询问、解释或提到「志愿个数」「最多几个志愿」「每位学生最多填几个志愿」。这不是老师要决定的事，也不要把它算进还缺的信息。
 一句话里有两个名额时，courseAmbiguous 设为 true，不要拆课。
 老师如果是在问你，而不是在补充选课信息，slots 留空。

@@ -18,11 +18,13 @@ import { SYSTEM_PROMPT } from "./prompts/system.js";
 import { isWriteTool, toolAction, tools } from "./tools/index.js";
 import {
   applySlots,
+  buildCatalogConfirmForDraft,
   currentGapQuestion,
   finishTurn,
   offerCreateIfReady,
   proposeWrite,
   reviewAfterSlots,
+  shouldOfferCatalogConfirm,
   step,
   withProgress,
 } from "./turn.js";
@@ -190,12 +192,17 @@ function observe(draft: AssistantDraft, message: string, decision: Decision, now
     : update;
   const dualBefore = tryDualTeacherBeforeCreate(draft, message, teacherUpdate, mergeDraft);
   if (dualBefore) return dualBefore;
-  const addBefore = tryAddTopicBeforeCreate(draft, message, teacherUpdate);
-  if (addBefore) return withProgress(teacherUpdate, addBefore);
+  if (!isDualTeacherMessage(message)) {
+    const addBefore = tryAddTopicBeforeCreate(draft, message, teacherUpdate);
+    if (addBefore) return withProgress(teacherUpdate, addBefore);
+  }
   const addTurn = tryAddTopicTurn(draft, message, teacherUpdate);
   if (addTurn?.confirm) return addTurn;
   if (addTurn) return withProgress(teacherUpdate, addTurn);
   let next = applySlots(draft, update, now);
+  if (shouldOfferCatalogConfirm(next)) {
+    return withProgress(update, buildCatalogConfirmForDraft(next));
+  }
   const confirmOffer = offerCreateIfReady(next, message);
   if (confirmOffer) return withProgress(update, confirmOffer);
   if (

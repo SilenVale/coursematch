@@ -1,6 +1,13 @@
 /** 教师选课助理的对话草稿。活动记录仍以数据库为准，这里只在确认前攒槽位。 */
 
-export type ConfirmAction = "create" | "publish" | "provision" | "freeze" | "allocate" | "add_topic";
+export type ConfirmAction =
+  | "catalog"
+  | "create"
+  | "publish"
+  | "provision"
+  | "freeze"
+  | "allocate"
+  | "add_topic";
 
 export type AwaitingSlot =
   | "title"
@@ -36,6 +43,8 @@ export interface AssistantDraft {
   topic: AssistantTopic;
   /** 已匹配的全校教务课种 id（仅本地草稿提示用）。 */
   catalogCourseId: string | null;
+  /** 教师已确认课种（匹配或登记教务目录）后，活动名称与课种对齐。 */
+  catalogAcknowledged: boolean;
   topicWritten: boolean;
   pending: ConfirmAction | null;
   /** 待确认添加的第二条及以后课程（首条已在 topic 里）。 */
@@ -71,6 +80,7 @@ export function emptyDraft(): AssistantDraft {
     rosterWritten: false,
     topic: { courseName: "", instructor: "", schedule: "", capacity: null },
     catalogCourseId: null,
+    catalogAcknowledged: false,
     topicWritten: false,
     pending: null,
     awaiting: null,

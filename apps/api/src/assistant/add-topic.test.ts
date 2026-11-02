@@ -15,6 +15,8 @@ describe("添加授课教师", () => {
       schedule: "周四 7-8 节",
       capacity: 30,
     };
+    draft.catalogAcknowledged = true;
+    draft.title = "数据结构与算法";
     const result = tryAddTopicBeforeCreate(
       draft,
       "我现在还想加个老师刘老师，时间和名额是一样的",
