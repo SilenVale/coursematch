@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  HARD_MAX_PREFERENCES,
+  TOPICS_PER_ACTIVITY,
   derivePhase,
   validateExpectedVersion,
   validatePreferenceWrite,
@@ -48,38 +48,37 @@ describe("writeBlockedByPhase", () => {
 });
 
 describe("validatePreferenceWrite", () => {
-  it("接受 1～maxPreferences 个有序 topicId", () => {
-    const parsed = validatePreferenceWrite({ topicIds: [uuid(1), uuid(2)] }, 3);
+  it("接受恰好 1 个 topicId", () => {
+    const parsed = validatePreferenceWrite({ topicIds: [uuid(1)] });
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect(parsed.topicIds).toEqual([uuid(1), uuid(2)]);
+    if (parsed.ok) expect(parsed.topicIds).toEqual([uuid(1)]);
+  });
+
+  it("拒绝多于 1 个班", () => {
+    const parsed = validatePreferenceWrite({ topicIds: [uuid(1), uuid(2)] });
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.fieldErrors[0].code).toBe("OUT_OF_RANGE");
+    expect(TOPICS_PER_ACTIVITY).toBe(1);
   });
 
   it("拒绝重复题目", () => {
-    const parsed = validatePreferenceWrite({ topicIds: [uuid(1), uuid(1)] }, 3);
+    const parsed = validatePreferenceWrite({ topicIds: [uuid(1), uuid(1)] });
     expect(parsed.ok).toBe(false);
-    if (!parsed.ok) expect(parsed.fieldErrors[0].code).toBe("DUPLICATE");
-  });
-
-  it("拒绝超过活动上限，且不超过硬上限 3", () => {
-    const parsed = validatePreferenceWrite({ topicIds: [uuid(1), uuid(2)] }, 1);
-    expect(parsed.ok).toBe(false);
-    if (!parsed.ok) expect(parsed.fieldErrors[0].code).toBe("OUT_OF_RANGE");
-
-    const over = validatePreferenceWrite(
-      { topicIds: [uuid(1), uuid(2), uuid(3), uuid(4)] },
-      HARD_MAX_PREFERENCES,
-    );
-    expect(over.ok).toBe(false);
+    if (!parsed.ok) {
+      expect(parsed.fieldErrors.some((e) => e.code === "DUPLICATE" || e.code === "OUT_OF_RANGE")).toBe(
+        true,
+      );
+    }
   });
 
   it("空列表按未提交之前的非法输入拒绝", () => {
-    const parsed = validatePreferenceWrite({ topicIds: [] }, 3);
+    const parsed = validatePreferenceWrite({ topicIds: [] });
     expect(parsed.ok).toBe(false);
     if (!parsed.ok) expect(parsed.fieldErrors[0].code).toBe("REQUIRED");
   });
 
   it("拒绝非 UUID 的题目 ID", () => {
-    const parsed = validatePreferenceWrite({ topicIds: ["not-a-uuid"] }, 3);
+    const parsed = validatePreferenceWrite({ topicIds: ["not-a-uuid"] });
     expect(parsed.ok).toBe(false);
     if (!parsed.ok) expect(parsed.fieldErrors[0].code).toBe("INVALID_FORMAT");
   });

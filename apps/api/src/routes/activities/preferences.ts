@@ -8,13 +8,14 @@
  * 也不改它。结果只来自服务端：本文件不计算任何分配结果。
  *
  * 规则要点：
- * - 整单提交，1～maxPreferences 个有序且不重复的题目；不占名额、不预分配。
+ * - 整单提交，每轮选课恰好 1 个班（一位老师）；不占名额、不预分配。
  * - 截止判定用数据库时钟，且先对活动行加锁再读时间。
  * - expectedVersion 乐观锁：不一致返回 VERSION_CONFLICT，失败不覆盖上一次有效提交。
  */
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import type { ErrorCode, Lifecycle, PreferenceView } from "@coursematch/shared";
 import { pool } from "../../db/pool.js";
+import { ensureStudentParticipant } from "../../lib/student-participant.js";
 import { fail, ok } from "../../lib/response.js";
 import {
   derivePhase,
@@ -60,19 +61,33 @@ function studentProfileId(req: FastifyRequest): string | null {
   return req.actor?.role === "STUDENT" ? req.actor.studentProfileId : null;
 }
 
-/** 学生必须在本活动名单内；不在名单按「找不到」处理，不透露活动是否存在。 */
 const PARTICIPANT_SQL = `SELECT id FROM participant
                          WHERE activity_id = $1 AND student_profile_id = $2`;
 
 async function findParticipantId(
+  db: typeof pool,
   activityId: string,
   profileId: string,
 ): Promise<string | null> {
-  const { rows } = await pool.query<{ id: string }>(PARTICIPANT_SQL, [
+  const { rows } = await db.query<{ id: string }>(PARTICIPANT_SQL, [
     activityId,
     profileId,
   ]);
   return rows[0]?.id ?? null;
+}
+
+async function loadStudentVisibleActivity(
+  activityId: string,
+): Promise<{ lifecycle: Lifecycle } | null> {
+  const { rows } = await pool.query<{ lifecycle: Lifecycle }>(
+    `SELECT lifecycle FROM activity WHERE id = $1`,
+    [activityId],
+  );
+  const activity = rows[0];
+  if (!activity || activity.lifecycle === "DRAFT" || activity.lifecycle === "VOID") {
+    return null;
+  }
+  return activity;
 }
 
 export const activityPreferenceRoutes: FastifyPluginAsync = async (app) => {
@@ -88,17 +103,14 @@ export const activityPreferenceRoutes: FastifyPluginAsync = async (app) => {
       const profileId = studentProfileId(req);
       if (!profileId) return send(reply, "UNAUTHENTICATED", "会话学生信息缺失", 401);
 
-      const { rows: activityRows } = await pool.query<{ lifecycle: Lifecycle }>(
-        `SELECT lifecycle FROM activity WHERE id = $1`,
-        [req.params.activityId],
-      );
-      const activity = activityRows[0];
-      if (!activity || activity.lifecycle === "DRAFT") {
-        return send(reply, "RESOURCE_NOT_FOUND", "活动不存在", 404);
-      }
+      const activity = await loadStudentVisibleActivity(req.params.activityId);
+      if (!activity) return send(reply, "RESOURCE_NOT_FOUND", "活动不存在", 404);
 
-      const participantId = await findParticipantId(req.params.activityId, profileId);
-      if (!participantId) return send(reply, "RESOURCE_NOT_FOUND", "活动不存在", 404);
+      const participantId = await findParticipantId(pool, req.params.activityId, profileId);
+      if (!participantId) {
+        const empty: PreferenceView = { topicIds: [], version: 0, submittedAt: null };
+        return ok(empty);
+      }
 
       const { rows } = await pool.query<{
         topic_id: string;
@@ -151,20 +163,16 @@ export const activityPreferenceRoutes: FastifyPluginAsync = async (app) => {
           [req.params.activityId],
         );
         const activity = activityRows[0];
-        if (!activity || activity.lifecycle === "DRAFT") {
+        if (!activity || activity.lifecycle === "DRAFT" || activity.lifecycle === "VOID") {
           await client.query("ROLLBACK");
           return send(reply, "RESOURCE_NOT_FOUND", "活动不存在", 404);
         }
 
-        const { rows: participantRows } = await client.query<{ id: string }>(
-          PARTICIPANT_SQL,
-          [req.params.activityId, profileId],
+        const participantId = await ensureStudentParticipant(
+          client,
+          req.params.activityId,
+          profileId,
         );
-        const participantId = participantRows[0]?.id ?? null;
-        if (!participantId) {
-          await client.query("ROLLBACK");
-          return send(reply, "RESOURCE_NOT_FOUND", "活动不存在", 404);
-        }
 
         // 纯校验放在锁内、截止判定之后：先回答「能不能写」，再回答「内容对不对」。
         const phase = derivePhase(
@@ -179,7 +187,7 @@ export const activityPreferenceRoutes: FastifyPluginAsync = async (app) => {
           return send(reply, blocked.code, blocked.message, blocked.status);
         }
 
-        const parsed = validatePreferenceWrite(req.body, activity.max_preferences);
+        const parsed = validatePreferenceWrite(req.body);
         if (!parsed.ok) {
           await client.query("ROLLBACK");
           return send(reply, "INVALID_INPUT", "志愿内容不合法", 400, {

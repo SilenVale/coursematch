@@ -53,7 +53,7 @@ export function PreferencesPage() {
       setTopics(topicList);
       setVersion(mine.version);
       setSaved(mine.topicIds);
-      setDraft(mine.topicIds);
+      setDraft(mine.topicIds.slice(0, 1));
     } catch (e) {
       setError(e instanceof Error ? e.message : "加载失败");
       setActivity(null);
@@ -66,11 +66,11 @@ export function PreferencesPage() {
   }, [activityId, load]);
 
   const readOnly = activity !== null && activity.phase !== "FILLING";
-  const maxPreferences = activity?.maxPreferences ?? 3;
-  const dirty = useMemo(
-    () => draft.length > saved.length || draft.some((id, i) => id !== saved[i]),
-    [draft, saved],
-  );
+  const selectedId = draft[0] ?? "";
+  const dirty = useMemo(() => {
+    const savedOne = saved[0] ?? "";
+    return selectedId !== savedOne;
+  }, [selectedId, saved]);
 
   const titleOf = useCallback(
     (topicId: string) =>
@@ -78,41 +78,31 @@ export function PreferencesPage() {
     [topics],
   );
 
-  function add(topicId: string) {
+  function choose(topicId: string) {
     if (readOnly) return;
-    if (draft.includes(topicId)) return;
-    if (draft.length >= maxPreferences) {
-      setNotice(`最多保存 ${maxPreferences} 个志愿，请先移除一个`);
-      return;
-    }
     setNotice("");
-    setDraft([...draft, topicId]);
+    setDraft([topicId]);
   }
 
-  function remove(index: number) {
+  function clearChoice() {
     if (readOnly) return;
-    setDraft(draft.filter((_, i) => i !== index));
-  }
-
-  function move(index: number, delta: number) {
-    if (readOnly) return;
-    const next = [...draft];
-    const target = index + delta;
-    if (target < 0 || target >= next.length) return;
-    [next[index], next[target]] = [next[target], next[index]];
-    setDraft(next);
+    setDraft([]);
   }
 
   async function save() {
     if (!activityId || readOnly) return;
+    if (draft.length === 0) {
+      setNotice("请先选择 1 个授课班再保存");
+      return;
+    }
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      const result = await saveMyPreferences(activityId, draft, version);
+      const result = await saveMyPreferences(activityId, draft.slice(0, 1), version);
       setVersion(result.version);
       setSaved(result.topicIds);
-      setDraft(result.topicIds);
+      setDraft(result.topicIds.slice(0, 1));
       setNotice(
         `已保存第 ${result.version} 版${
           result.submittedAt ? ` · ${new Date(result.submittedAt).toLocaleString("zh-CN")}` : ""
@@ -120,15 +110,13 @@ export function PreferencesPage() {
       );
     } catch (e) {
       if (e instanceof StudentApiError && e.code === "VERSION_CONFLICT") {
-        // 别处改过：只刷新版本与已保存值，保留用户当前的顺序，让他确认后再保存。
-        // 如果连草稿一起重置，用户刚才那次调整会静默消失。
         try {
           const latest = await fetchMyPreferences(activityId);
           setVersion(latest.version);
           setSaved(latest.topicIds);
           setNotice(
             `志愿已在别处更新，已加载最新版本（第 ${latest.version} 版）；` +
-              `你当前的顺序尚未保存，确认后再点「保存志愿」。`,
+              `你当前的选择尚未保存，确认后再点「保存选择」。`,
           );
         } catch (refreshError) {
           setError(refreshError instanceof Error ? refreshError.message : "刷新失败");
@@ -145,14 +133,14 @@ export function PreferencesPage() {
     <div className="card">
       <h1 className="page-head">志愿填报</h1>
       <p className="lead">
-        按偏好顺序保存 1～{maxPreferences} 门课。志愿只影响处理次序，不预先占名额；截止后不可修改。
+        每门课（每轮选课）选 1 位老师所在的班；可同时参与任意多门已发布的选课。截止后不可修改。
       </p>
 
-      {activities.length === 0 && <p className="text-muted">暂无已发布的活动你在名单内。</p>}
+      {activities.length === 0 && <p className="text-muted">暂无已发布的选课。</p>}
 
       {activities.length > 0 && (
         <div className="field-row" style={{ marginBottom: 12 }}>
-          <label className="label-inline" htmlFor="pref-activity">活动</label>
+          <label className="label-inline" htmlFor="pref-activity">选课</label>
           <select
             id="pref-activity"
             className="select"
@@ -173,17 +161,17 @@ export function PreferencesPage() {
       {notice && <p className="notice">{notice}</p>}
       {readOnly && (
         <p className="error">
-          当前阶段为 {activity?.phase}，志愿已锁定，只能查看。
+          当前阶段为 {activity?.phase}，选择已锁定，只能查看。
         </p>
       )}
 
       {topics && (
         <>
-          <h2 className="section-title">可选课程</h2>
+          <h2 className="section-title">可选班</h2>
           <table className="data-table">
             <thead>
               <tr>
-                <th align="left">课程</th>
+                <th align="left">班 / 教师</th>
                 <th align="left">名额</th>
                 <th align="left">热度</th>
                 <th align="left">要求</th>
@@ -192,7 +180,7 @@ export function PreferencesPage() {
             </thead>
             <tbody>
               {topics.items.filter(isStudentTopic).map((topic) => {
-                const picked = draft.indexOf(topic.topicId);
+                const picked = selectedId === topic.topicId;
                 return (
                   <tr key={topic.topicId}>
                     <td>
@@ -218,20 +206,20 @@ export function PreferencesPage() {
                     <td style={{ fontSize: 13 }}>
                       {topic.eligibilityDescription || "无"}
                       {!topic.canChoose && (
-                        <div className="error">你不符合该题要求</div>
+                        <div className="error">你不符合该班要求</div>
                       )}
                     </td>
                     <td>
-                      {picked >= 0 ? (
-                        <span className="badge">已加入（第 {picked + 1} 志愿）</span>
+                      {picked ? (
+                        <span className="badge">已选</span>
                       ) : (
                         <button
                           type="button"
                           className="btn btn-sm"
-                          onClick={() => add(topic.topicId)}
+                          onClick={() => choose(topic.topicId)}
                           disabled={readOnly || !topic.canChoose || busy}
                         >
-                          加入志愿
+                          选这个班
                         </button>
                       )}
                     </td>
@@ -241,37 +229,35 @@ export function PreferencesPage() {
             </tbody>
           </table>
 
-          <h2 className="section-title">我的志愿（{draft.length}/{maxPreferences}）</h2>
-          {draft.length === 0 ? (
-            <p className="text-muted">
-              还没有保存志愿。只保存一部分是允许的，但系统只会按你填写的顺序尝试。
+          <h2 className="section-title">我的选择</h2>
+          {selectedId ? (
+            <p>
+              {titleOf(selectedId)}{" "}
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={clearChoice}
+                disabled={readOnly || busy}
+              >
+                改选
+              </button>
             </p>
           ) : (
-            <ol>
-              {draft.map((topicId, index) => (
-                <li key={topicId} style={{ marginBottom: 6 }}>
-                  {titleOf(topicId)}{" "}
-                  <button type="button" className="btn btn-sm" onClick={() => move(index, -1)} disabled={readOnly || index === 0 || busy}>
-                    上移
-                  </button>{" "}
-                  <button type="button" className="btn btn-sm" onClick={() => move(index, 1)} disabled={readOnly || index === draft.length - 1 || busy}>
-                    下移
-                  </button>{" "}
-                  <button type="button" className="btn btn-sm" onClick={() => remove(index)} disabled={readOnly || busy}>
-                    移除
-                  </button>
-                </li>
-              ))}
-            </ol>
+            <p className="text-muted">尚未选择。点「选这个班」后保存即可。</p>
           )}
 
           <p>
-            <button type="button" className="btn btn-primary" onClick={save} disabled={readOnly || !dirty || busy}>
-              {busy ? "保存中…" : dirty ? "保存志愿" : "已是最新"}
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={save}
+              disabled={readOnly || !dirty || busy || !selectedId}
+            >
+              {busy ? "保存中…" : dirty ? "保存选择" : "已是最新"}
             </button>{" "}
             <small className="text-muted">
               当前版本 {version}
-              {saved.length > 0 ? `，已保存 ${saved.length} 个志愿` : "，尚未保存"}
+              {saved.length > 0 ? "，已保存" : "，尚未保存"}
             </small>
           </p>
         </>

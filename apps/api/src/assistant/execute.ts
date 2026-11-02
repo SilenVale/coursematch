@@ -209,7 +209,7 @@ async function executeCreate(
         description: next.description,
         startAt: next.startAt,
         deadlineAt: next.deadlineAt,
-        maxPreferences: next.maxPreferences ?? 3,
+        maxPreferences: 1,
       }),
     );
     if (created.status >= 400) {

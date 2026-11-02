@@ -44,21 +44,20 @@ function buildChecklist(params: {
   });
 
   items.push({
-    label: "最大志愿数",
-    state: activity.maxPreferences >= 1 && activity.maxPreferences <= 3 ? "ok" : "fail",
-    detail: `${activity.maxPreferences} 个`,
+    label: "选课规则",
+    state: activity.maxPreferences >= 1 ? "ok" : "fail",
+    detail: "每门课选 1 个班（1 位老师）",
   });
 
   items.push({
-    label: "参与名单",
-    state:
-      participantCount === null ? "unknown" : participantCount > 0 ? "ok" : "fail",
+    label: "参与名单（可选）",
+    state: participantCount === null ? "unknown" : "ok",
     detail:
       participantCount === null
         ? "尚未加载"
         : participantCount > 0
-          ? `${participantCount} 人`
-          : "名单为空，发布后没有学生能填报本轮选课",
+          ? `已导入 ${participantCount} 人；未在名单内的学生也可自行参与`
+          : "未导入名单；任意已登录学生可在填报期自行参与",
   });
 
   items.push({

@@ -6,8 +6,8 @@
  */
 import type { ActivityPhase, ErrorCode, FieldError, Lifecycle } from "@coursematch/shared";
 
-/** 契约与迁移里都写死的上限：max_preferences BETWEEN 1 AND 3。 */
-export const HARD_MAX_PREFERENCES = 3;
+/** 每轮选课（每个 activity）学生只选 1 个班（一位授课教师）。 */
+export const TOPICS_PER_ACTIVITY = 1;
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -66,13 +66,10 @@ export type PreferenceWriteParse =
   | { ok: false; fieldErrors: FieldError[] };
 
 /**
- * 校验整单志愿：1～maxPreferences 个有序 topicId，不重复。
- * 空数组按「至少选一个」拒绝——第一版不做退选，未提交由「从未保存」表达。
+ * 校验整单志愿：恰好 1 个 topicId（一门课选一位老师）。
+ * 空数组按「至少选一个」拒绝——未提交由「从未保存」表达。
  */
-export function validatePreferenceWrite(
-  payload: unknown,
-  maxPreferences: number,
-): PreferenceWriteParse {
+export function validatePreferenceWrite(payload: unknown): PreferenceWriteParse {
   const fieldErrors: FieldError[] = [];
 
   if (typeof payload !== "object" || payload === null) {
@@ -103,28 +100,27 @@ export function validatePreferenceWrite(
     topicIds.push(item);
   });
 
-  if (new Set(topicIds).size !== topicIds.length) {
-    fieldErrors.push({
-      field: "topicIds",
-      code: "DUPLICATE",
-      message: "同一个题目不能出现在两个志愿位次",
-    });
-  }
-
   if (topicIds.length === 0) {
     fieldErrors.push({
       field: "topicIds",
       code: "REQUIRED",
-      message: "至少选择 1 个题目；不保存即视为未提交",
+      message: "请选择 1 个授课班；不保存即视为未提交",
     });
   }
 
-  const limit = Math.min(maxPreferences, HARD_MAX_PREFERENCES);
-  if (topicIds.length > limit) {
+  if (topicIds.length > TOPICS_PER_ACTIVITY) {
     fieldErrors.push({
       field: "topicIds",
       code: "OUT_OF_RANGE",
-      message: `本活动最多保存 ${limit} 个志愿，当前提交 ${topicIds.length} 个`,
+      message: "每门课只能选 1 位老师（1 个班）",
+    });
+  }
+
+  if (new Set(topicIds).size !== topicIds.length) {
+    fieldErrors.push({
+      field: "topicIds",
+      code: "DUPLICATE",
+      message: "不能重复选择同一个班",
     });
   }
 

@@ -262,12 +262,12 @@ function validateDraftFields(input: Partial<ActivityDraftInput>): {
 
   if (input.maxPreferences !== undefined) {
     const n = Number(input.maxPreferences);
-    if (!Number.isInteger(n) || n < 1 || n > 3) {
+    if (!Number.isInteger(n) || n !== 1) {
       fieldErrors.push(
-        fieldError("maxPreferences", "OUT_OF_RANGE", "最大志愿数必须是 1～3 的整数"),
+        fieldError("maxPreferences", "OUT_OF_RANGE", "每门课固定选 1 位老师（maxPreferences 须为 1）"),
       );
     } else {
-      values.maxPreferences = n;
+      values.maxPreferences = 1;
     }
   }
 
@@ -963,26 +963,25 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
     // 学生视角需要 participantId 判断 canChoose；教师视角留空。
     let studentParticipantId: string | null = null;
 
-    // 教师看自己的活动；学生必须在名单内，否则按「找不到」处理。
     if (req.actor.role === "TEACHER") {
       const owned = await loadOwnedActivity(req, reply, activityId);
       if (!owned) return reply;
     } else {
+      const { rows: act } = await pool.query<{ lifecycle: Lifecycle }>(
+        `SELECT lifecycle FROM activity WHERE id = $1`,
+        [activityId],
+      );
+      if (act.length === 0 || act[0].lifecycle === "DRAFT" || act[0].lifecycle === "VOID") {
+        const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
+        return reply.code(status).send(body);
+      }
       const { rows: member } = await pool.query<{ id: string }>(
         `SELECT p.id FROM participant p
          JOIN account a ON a.student_profile_id = p.student_profile_id
          WHERE p.activity_id = $1 AND a.id = $2`,
         [activityId, req.actor.accountId],
       );
-      const { rows: act } = await pool.query<{ lifecycle: Lifecycle }>(
-        `SELECT lifecycle FROM activity WHERE id = $1`,
-        [activityId],
-      );
-      if (member.length === 0 || act.length === 0 || act[0].lifecycle === "DRAFT") {
-        const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
-        return reply.code(status).send(body);
-      }
-      studentParticipantId = member[0].id;
+      studentParticipantId = member[0]?.id ?? null;
     }
 
     const { q, tag } = req.query ?? {};

@@ -65,8 +65,6 @@ export function ActivityBasicsForm({
     if (form.startAt !== baseline.startAt) changed.startAt = fromDateTimeLocal(form.startAt);
     if (form.deadlineAt !== baseline.deadlineAt)
       changed.deadlineAt = fromDateTimeLocal(form.deadlineAt);
-    if (form.maxPreferences !== baseline.maxPreferences)
-      changed.maxPreferences = Number(form.maxPreferences);
     return changed;
   }, [form, baseline]);
 
@@ -148,19 +146,9 @@ export function ActivityBasicsForm({
           <FieldErrorText errors={errorsFor("deadlineAt")} />
         </label>
 
-        <label className="cm-field">
-          <span>最大志愿数（1～3）</span>
-          <select
-            value={form.maxPreferences}
-            disabled={!canEditTitle}
-            onChange={(e) => setForm({ ...form, maxPreferences: e.target.value })}
-          >
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </select>
-          <FieldErrorText errors={errorsFor("maxPreferences")} />
-        </label>
+        <p className="cm-muted cm-span-2">
+          学生在本课种只能选 1 个班（1 位老师）；可同时参与其他已发布选课，数量不限。
+        </p>
       </div>
 
       <div className="cm-actions">

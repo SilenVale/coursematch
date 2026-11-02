@@ -104,23 +104,11 @@ export async function publishBlockers(row: {
       message: "截止时间必须晚于开始时间",
     });
   }
-  if (row.max_preferences < 1 || row.max_preferences > 3) {
+  if (row.max_preferences < 1) {
     blockers.push({
       field: "maxPreferences",
       code: "OUT_OF_RANGE",
-      message: "最大志愿数必须是 1～3",
-    });
-  }
-
-  const { rows: participantRows } = await pool.query<{ count: number }>(
-    `SELECT COUNT(*)::int AS count FROM participant WHERE activity_id = $1`,
-    [row.id],
-  );
-  if (participantRows[0].count === 0) {
-    blockers.push({
-      field: "participants",
-      code: "REQUIRED",
-      message: "参与名单为空，发布后没有学生能选择本活动",
+      message: "选课规则配置无效",
     });
   }
 

@@ -29,7 +29,7 @@ export function CourseOverview() {
     <div className="card course-overview">
       <p className="lead">
         当前状态：<strong>{phaseText}</strong>。开始 {formatBeijing(activity.startAt)}，截止{" "}
-        {formatBeijing(activity.deadlineAt)}，每人最多 {activity.maxPreferences} 个志愿。
+        {formatBeijing(activity.deadlineAt)}。学生在本课种选 1 个班，可同时参与其他已发布选课。
       </p>
       <p className="text-muted">{activity.description || "（未填写说明）"}</p>
       <p>
@@ -39,7 +39,7 @@ export function CourseOverview() {
       </p>
       <ol className="course-steps text-muted">
         <li>继续配置：课种、名单、开设的班</li>
-        <li>发布：学生在「志愿填报」中提交有序志愿</li>
+        <li>发布：学生在「志愿填报」中为每门课选 1 个班</li>
         <li>截止后：分配结果 → 冻结快照 → 主分配 → 关闭</li>
       </ol>
     </div>

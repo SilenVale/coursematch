@@ -47,7 +47,7 @@ function defaultDraft() {
     description: "",
     startAt: local(start),
     deadlineAt: local(deadline),
-    maxPreferences: "3",
+    maxPreferences: "1",
   };
 }
 
@@ -71,7 +71,7 @@ export function CreateActivityForm({
         description: form.description,
         startAt: fromDateTimeLocal(form.startAt),
         deadlineAt: fromDateTimeLocal(form.deadlineAt),
-        maxPreferences: Number(form.maxPreferences),
+        maxPreferences: 1,
       });
       onCreated(created);
     } catch (err) {
@@ -88,7 +88,7 @@ export function CreateActivityForm({
     <div className="cm-create">
       <h2>新开一轮选课</h2>
       <p className="cm-muted">
-        先填课种名称（与教务目录一致）。草稿阶段可改；发布后课种名、时间、志愿数与名单会锁定。
+        先填课种名称（与教务目录一致）。草稿阶段可改；发布后课种名、时间与名单会锁定。学生每门课选 1 个班，可参与任意多门已发布选课。
       </p>
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
@@ -136,18 +136,6 @@ export function CreateActivityForm({
           <FieldErrorText errors={errorsFor("deadlineAt")} />
         </label>
 
-        <label className="cm-field">
-          <span>最大志愿数（1～3）</span>
-          <select
-            value={form.maxPreferences}
-            onChange={(e) => setForm({ ...form, maxPreferences: e.target.value })}
-          >
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </select>
-          <FieldErrorText errors={errorsFor("maxPreferences")} />
-        </label>
       </div>
 
       <div className="cm-actions">

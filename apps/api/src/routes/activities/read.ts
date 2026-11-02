@@ -84,11 +84,9 @@ export const activityReadRoutes: FastifyPluginAsync = async (app) => {
     const { rows } = await pool.query(
       `SELECT a.*
        FROM activity a
-       JOIN participant p ON p.activity_id = a.id
-       JOIN account acc ON acc.student_profile_id = p.student_profile_id
-       WHERE acc.id = $1 AND a.lifecycle <> 'DRAFT'
+       WHERE a.lifecycle NOT IN ('DRAFT', 'VOID')
        ORDER BY a.created_at DESC`,
-      [req.actor.accountId],
+      [],
     );
     return ok({ items: rows.map(mapSummary) });
   });
@@ -119,13 +117,7 @@ export const activityReadRoutes: FastifyPluginAsync = async (app) => {
         return ok(mapView(row, true));
       }
 
-      const { rows: part } = await pool.query(
-        `SELECT 1 FROM participant p
-         JOIN account a ON a.student_profile_id = p.student_profile_id
-         WHERE p.activity_id = $1 AND a.id = $2 AND $3 <> 'DRAFT'`,
-        [activityId, req.actor.accountId, row.lifecycle],
-      );
-      if (part.length === 0) {
+      if (row.lifecycle === "DRAFT" || row.lifecycle === "VOID") {
         const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
         return reply.code(status).send(body);
       }
