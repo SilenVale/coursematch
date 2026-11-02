@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { offerSummaryLine, unpackOfferDescription } from "../teacher/topicOfferFormat";
 import type {
   ActivitySummary,
@@ -20,6 +21,7 @@ function isStudentTopic(topic: TopicListView["items"][number]): topic is Student
 }
 
 export function PreferencesPage() {
+  const [searchParams] = useSearchParams();
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [activityId, setActivityId] = useState("");
   const [activity, setActivity] = useState<ActivityView | null>(null);
@@ -32,13 +34,18 @@ export function PreferencesPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    const fromQuery = searchParams.get("activity")?.trim() ?? "";
     fetchStudentActivities()
       .then((items) => {
         setActivities(items);
-        if (items.length > 0) setActivityId(items[0].activityId);
+        if (fromQuery && items.some((a) => a.activityId === fromQuery)) {
+          setActivityId(fromQuery);
+        } else if (items.length > 0) {
+          setActivityId(items[0].activityId);
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : "加载活动失败"));
-  }, []);
+  }, [searchParams]);
 
   const load = useCallback(async (id: string) => {
     setError("");

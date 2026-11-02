@@ -660,13 +660,35 @@ a.btn:hover {
 
 .activity-list li {
   display: flex;
+  align-items: stretch;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.activity-list-pick {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.activity-list-pick:hover {
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+}
+
+.activity-list-pick.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .badge {
