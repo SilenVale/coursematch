@@ -49,6 +49,8 @@ set -a && source .env && set +a && npm run migrate && npm run seed
 | 教师 | `teacher01` | 兼容；`SEED_MODE=full` 时含旧版三条示例 |
 | 学生 | `20260001` / `20260002` | 可登录志愿填报与我的结果 |
 
+教师端名单 **开通账号** 时，新建学生登录的初始密码默认为 **`12345678`**（可用环境变量 `STUDENT_DEFAULT_PASSWORD` 覆盖；与种子账号密码 `Coursematch-Dev-2026` 无关）。
+
 学生仅可见已发布且自己在名单内的选课；每位教师仅能看到自己创建的本轮选课（后台 `activity`）。
 
 ### 测试

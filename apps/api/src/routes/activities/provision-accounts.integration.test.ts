@@ -25,7 +25,7 @@ const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 
 const suite = DATABASE_URL ? describe : describe.skip;
 
-const PASSWORD = "Coursematch-Dev-2026";
+const PASSWORD = "12345678";
 const JSON_H = { "content-type": "application/json" };
 const CSV_H = { "content-type": "text/csv" };
 

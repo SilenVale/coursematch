@@ -28,7 +28,10 @@ import type {
   VoidView,
 } from "@coursematch/shared";
 import { pool } from "../../db/pool.js";
-import { provisionAccountsForActivity } from "../../lib/provision-student-accounts.js";
+import {
+  getStudentDefaultPassword,
+  provisionAccountsForActivity,
+} from "../../lib/provision-student-accounts.js";
 import { fail, ok } from "../../lib/response.js";
 import {
   buildRosterPreview,
@@ -645,7 +648,7 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
       return ok({
         provisionedCount: result.provisionedCount,
         identifiers: result.identifiers,
-        defaultPasswordHint: "Coursematch-Dev-2026",
+        defaultPasswordHint: getStudentDefaultPassword(),
       });
     },
   );

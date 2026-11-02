@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { Pool } from "pg";
 
-const DEFAULT_PASSWORD = process.env.STUDENT_DEFAULT_PASSWORD ?? "Coursematch-Dev-2026";
+/** 名单「开通账号」时写入的初始密码；Dev 默认可手测 12345678。 */
+export function getStudentDefaultPassword(): string {
+  return process.env.STUDENT_DEFAULT_PASSWORD ?? "12345678";
+}
 
 /** 为本活动中尚未建号的学生档案创建登录账号（identifier = 学号）。 */
 export async function provisionAccountsForActivity(
@@ -23,7 +26,7 @@ export async function provisionAccountsForActivity(
     return { provisionedCount: 0, identifiers: [] };
   }
 
-  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  const passwordHash = await bcrypt.hash(getStudentDefaultPassword(), 12);
   const identifiers: string[] = [];
 
   for (const row of rows) {
