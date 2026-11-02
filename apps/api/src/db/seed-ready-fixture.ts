@@ -2,12 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import type { SeedAccountsResult } from "./seed-shared.js";
 
-/** 为 teacher_ready 写入两条选课任务：一条选课中、一条已截止（含题目与志愿）。 */
+/** 为 teacher_blank 写入两条选课任务：一条选课中、一条已截止（含题目与志愿）。 */
 export async function seedReadyFixture(
   pool: Pool,
-  accounts: Pick<SeedAccountsResult, "teacherReadyId" | "profileA" | "profileB">,
+  accounts: Pick<SeedAccountsResult, "teacherBlankId" | "profileA" | "profileB">,
 ): Promise<void> {
-  const { teacherReadyId, profileA, profileB } = accounts;
+  const { teacherBlankId, profileA, profileB } = accounts;
+  const teacherReadyId = teacherBlankId;
   const activityPublished = randomUUID();
   const activityClosed = randomUUID();
   const partPubA = randomUUID();

@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ActorView } from "@coursematch/shared";
 import { apiLogout } from "../api/client";
-
-const DEMO_IDENTIFIERS = [
-  { id: "teacher_blank", hint: "空教师" },
-  { id: "teacher_ready", hint: "已配置" },
-  { id: "teacher01", hint: "兼容" },
-  { id: "20260001", hint: "学生" },
-] as const;
+import { DEMO_ACCOUNTS } from "../demoAccounts";
 
 export function UserMenu({ actor, onLogout }: { actor: ActorView; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
@@ -49,7 +43,7 @@ export function UserMenu({ actor, onLogout }: { actor: ActorView; onLogout: () =
       {open && (
         <div className="user-menu-panel" role="menu">
           <div className="user-menu-section">切换账号</div>
-          {DEMO_IDENTIFIERS.map((row) => (
+          {DEMO_ACCOUNTS.map((row) => (
             <button
               key={row.id}
               type="button"
@@ -63,7 +57,7 @@ export function UserMenu({ actor, onLogout }: { actor: ActorView; onLogout: () =
                 })();
               }}
             >
-              {row.id}
+              {row.title}
               <span className="user-menu-hint">{row.hint}</span>
             </button>
           ))}

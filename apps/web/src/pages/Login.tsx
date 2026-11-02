@@ -2,12 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ActorView } from "@coursematch/shared";
 import { apiLogin } from "../api/client";
-
-const QUICK_ACCOUNTS = [
-  { id: "teacher_blank", label: "空教师" },
-  { id: "teacher_ready", label: "已配置教师" },
-  { id: "20260001", label: "学生甲" },
-] as const;
+import { DEMO_ACCOUNTS } from "../demoAccounts";
 
 export function LoginPage({ onLogin }: { onLogin: (a: ActorView) => void }) {
   const [searchParams] = useSearchParams();
@@ -27,14 +22,14 @@ export function LoginPage({ onLogin }: { onLogin: (a: ActorView) => void }) {
         <h1 className="page-head">登录 CourseMatch</h1>
         <p className="lead">选课系统：教师配置发布，学生填报志愿，截止后统一分配。</p>
         <div className="login-quick">
-          {QUICK_ACCOUNTS.map((row) => (
+          {DEMO_ACCOUNTS.map((row) => (
             <button
               key={row.id}
               type="button"
               className="btn btn-sm"
               onClick={() => setIdentifier(row.id)}
             >
-              {row.label}
+              {row.title}（{row.hint}）
             </button>
           ))}
         </div>

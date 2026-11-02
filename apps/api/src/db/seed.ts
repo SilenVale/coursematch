@@ -40,10 +40,10 @@ async function main() {
 
   console.log("Seed complete. SEED_MODE =", mode);
   console.log("Password for all demo accounts:", DEV_PASSWORD);
-  console.log("  teacher_blank  — 空教师，工作台无课");
-  console.log("  teacher_ready  — 已配置两条示例课种/轮次");
-  console.log("  teacher01      —", mode === "full" ? "含原三条示例" : "无预置课");
-  console.log("  20260001, 20260002 — 学生");
+  console.log("  teacher_blank  — 已配置示例课种（SEED_MODE=ready 时）");
+  console.log("  mr_zhang, mr_li — 空教师");
+  console.log("  20262001 / 20262099 — 演示学生（已报上 / 未报上，需名单与分配数据）");
+  console.log("  20260001, 20260002 — 测试用学生");
 
   await pool.end();
 }

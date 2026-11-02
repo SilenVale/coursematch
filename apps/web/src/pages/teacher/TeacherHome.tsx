@@ -50,7 +50,7 @@ export function TeacherHome() {
         <div className="teacher-empty">
           <p>还没有课。点击「新开一轮选课」或使用「用助理创建」，先选课种再配置名单与班。</p>
           <p className="text-muted">
-            演示：使用右上角切换 <code>teacher_ready</code> 查看已配置示例；<code>teacher_blank</code> 为空账号。
+            演示：右上角切换账号 — <code>teacher_blank</code> 已配置流程；<code>Mr Zhang</code> / <code>Mr Li</code> 空教师。
           </p>
         </div>
       )}

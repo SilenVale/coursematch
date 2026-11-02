@@ -45,14 +45,22 @@ export async function seedAccounts(
   const teacherLegacyId = randomUUID();
   const studentA = randomUUID();
   const studentB = randomUUID();
+  const studentDemo1 = randomUUID();
+  const studentDemo2 = randomUUID();
+  const teacherMrZhang = randomUUID();
+  const teacherMrLi = randomUUID();
   const profileA = randomUUID();
   const profileB = randomUUID();
+  const profileDemo1 = randomUUID();
+  const profileDemo2 = randomUUID();
 
   await pool.query(
     `INSERT INTO student_profile (id, student_number, name, enrollment_year, major, class_name)
      VALUES ($1, '20260001', '学生甲', '2026', '软件工程', '1班'),
-            ($2, '20260002', '学生乙', '2026', '软件工程', '1班')`,
-    [profileA, profileB],
+            ($2, '20260002', '学生乙', '2026', '软件工程', '1班'),
+            ($3, '20262001', '演示生·已报上', '2026', '软件工程', '1班'),
+            ($4, '20262099', '演示生·未报上', '2026', '软件工程', '1班')`,
+    [profileA, profileB, profileDemo1, profileDemo2],
   );
 
   await pool.query(
@@ -60,17 +68,27 @@ export async function seedAccounts(
      VALUES ($1, 'teacher_blank', 'TEACHER', $2, NULL),
             ($3, 'teacher_ready', 'TEACHER', $2, NULL),
             ($4, 'teacher01', 'TEACHER', $2, NULL),
-            ($5, '20260001', 'STUDENT', $2, $6),
-            ($7, '20260002', 'STUDENT', $2, $8)`,
+            ($5, 'mr_zhang', 'TEACHER', $2, NULL),
+            ($6, 'mr_li', 'TEACHER', $2, NULL),
+            ($7, '20260001', 'STUDENT', $2, $8),
+            ($9, '20260002', 'STUDENT', $2, $10),
+            ($11, '20262001', 'STUDENT', $2, $12),
+            ($13, '20262099', 'STUDENT', $2, $14)`,
     [
       teacherBlankId,
       passwordHash,
       teacherReadyId,
       teacherLegacyId,
+      teacherMrZhang,
+      teacherMrLi,
       studentA,
       profileA,
       studentB,
       profileB,
+      studentDemo1,
+      profileDemo1,
+      studentDemo2,
+      profileDemo2,
     ],
   );
 
