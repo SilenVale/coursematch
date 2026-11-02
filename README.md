@@ -6,7 +6,7 @@
 
 **V1 业务主链已在 `master` 接通**（本地或 Dev 公网可演示）：教师按 **课种 / 班 / 发布** 配置与发布、学生志愿、截止后冻结与主分配、教师汇总/证据/关闭、学生本人结果 API 与页面。Dev HTTPS 已上线；§1.4 八条证据汇总与 runbook 留证仍在推进中。
 
-架构契约：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（来源：设计报告 v0.5，平台最高分 98.6）。类型：[docs/contracts/api-contracts.ts](docs/contracts/api-contracts.ts)（与 `packages/shared` 同步）。
+架构契约：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（来源：设计报告 v0.5，平台最高分 98.6）。**代码目录与路由地图（组员查阅）：** [docs/downloads/仓库架构与目录说明.md](docs/downloads/仓库架构与目录说明.md)。类型：[docs/contracts/api-contracts.ts](docs/contracts/api-contracts.ts)（与 `packages/shared` 同步）。
 
 **第一版范围与优秀线勾选：** [docs/V1_DELIVERY_PLAN.md](docs/V1_DELIVERY_PLAN.md) · 勾选表：[docs/V1_CHECKLIST.md](docs/V1_CHECKLIST.md) · 联调步骤：[docs/testing/v1-e2e-runbook.md](docs/testing/v1-e2e-runbook.md)
 

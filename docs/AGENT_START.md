@@ -12,7 +12,7 @@
 1. docs/AGENT_START.md（本文件，确认路由）
 2. docs/roles/README.md → 打开与「【姓名】」对应的任务卡
 3. docs/V1_DELIVERY_PLAN.md
-4. docs/ARCHITECTURE.md、docs/INTERNAL_MODULES.md、docs/ERROR_CODES.md
+4. docs/ARCHITECTURE.md、docs/INTERNAL_MODULES.md、docs/ERROR_CODES.md（代码目录地图见 docs/downloads/仓库架构与目录说明.md）
 5. packages/shared/src/api-contracts.ts（或 docs/contracts/api-contracts.ts）
 
 **分工以 ARCHITECTURE + V1 为准。** 不要按 TEAM_BASELINE、KICKOFF、WEEK1 立项记录里的旧分工（石=分配、罗=测试）实现。
