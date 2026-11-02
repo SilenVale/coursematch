@@ -608,6 +608,34 @@ a.btn:hover {
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
+.student-result-outcome {
+  margin-top: 8px;
+  padding: 20px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.student-result-headline {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.student-result-headline--ok {
+  color: var(--foreground);
+}
+
+.student-result-headline--muted {
+  color: var(--muted-foreground);
+}
+
+.student-result-headline--wait {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
 .input,
 .select {
   height: 32px;

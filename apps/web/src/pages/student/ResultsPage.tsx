@@ -1,18 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ActivitySummary, PersonalResultView } from "@coursematch/shared";
-import { fetchActivity, fetchMyResult, fetchStudentActivities } from "./student-api";
+import { PHASE_LABEL } from "../teacher/configUi";
+import {
+  fetchActivity,
+  fetchMyResult,
+  fetchStudentActivities,
+  fetchTopics,
+} from "./student-api";
 
-function statusLabel(view: PersonalResultView): string {
-  if (view.preparation === "PENDING") return "等待分配";
-  if (view.status === "ASSIGNED") return "已分配";
-  if (view.status === "UNALLOCATED") return "志愿均未命中";
-  return "未提交志愿";
+function outcomeSentence(
+  result: PersonalResultView,
+  topicTitle: string | null,
+): { headline: string; tone: "ok" | "muted" | "wait" } {
+  if (result.preparation === "PENDING") {
+    return { headline: "结果还没出来，请稍后再看。", tone: "wait" };
+  }
+  if (result.status === "ASSIGNED") {
+    const name = topicTitle?.trim() || "你的班";
+    return { headline: `已选上：${name}。`, tone: "ok" };
+  }
+  if (result.status === "UNALLOCATED") {
+    return { headline: "本轮未选上。", tone: "muted" };
+  }
+  return { headline: "截止前未提交选择，未参与本轮分配。", tone: "muted" };
 }
 
 export function ResultsPage() {
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [activityId, setActivityId] = useState("");
   const [activityTitle, setActivityTitle] = useState("");
+  const [topicTitle, setTopicTitle] = useState<string | null>(null);
   const [result, setResult] = useState<PersonalResultView | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,11 +38,7 @@ export function ResultsPage() {
     fetchStudentActivities()
       .then((items) => {
         setActivities(items);
-        const demo =
-          items.find((a) => a.title.includes("截止联调")) ??
-          items.find((a) => a.phase !== "FILLING") ??
-          items[0];
-        if (demo) setActivityId(demo.activityId);
+        if (items[0]) setActivityId(items[0].activityId);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "加载活动失败"));
   }, []);
@@ -37,10 +50,18 @@ export function ResultsPage() {
       const [detail, mine] = await Promise.all([fetchActivity(id), fetchMyResult(id)]);
       setActivityTitle(detail.title);
       setResult(mine);
+
+      let title: string | null = null;
+      if (mine.preparation === "READY" && mine.status === "ASSIGNED" && mine.topicId) {
+        const topics = await fetchTopics(id);
+        title = topics.items.find((t) => t.topicId === mine.topicId)?.title ?? null;
+      }
+      setTopicTitle(title);
     } catch (e) {
       setError(e instanceof Error ? e.message : "加载失败");
       setResult(null);
       setActivityTitle("");
+      setTopicTitle(null);
     } finally {
       setBusy(false);
     }
@@ -50,18 +71,20 @@ export function ResultsPage() {
     if (activityId) void load(activityId);
   }, [activityId, load]);
 
+  const outcome = result ? outcomeSentence(result, topicTitle) : null;
+
   return (
     <div className="card">
       <h1 className="page-head">我的结果</h1>
-      <p className="lead">
-        只读服务端分配结果。区分已分配、志愿均未命中、未提交；不提供补选入口。
-      </p>
+      <p className="lead">看本轮选课是否选上班级，数据以教师公布为准。</p>
 
-      {activities.length === 0 && <p className="text-muted">暂无已发布的活动你在名单内。</p>}
+      {activities.length === 0 && <p className="text-muted">暂无已发布的选课。</p>}
 
       {activities.length > 0 && (
-        <div className="field-row" style={{ marginBottom: 12 }}>
-          <label className="label-inline" htmlFor="result-activity">活动</label>
+        <div className="field-row" style={{ marginBottom: 16 }}>
+          <label className="label-inline" htmlFor="result-activity">
+            选课
+          </label>
           <select
             id="result-activity"
             className="select"
@@ -71,54 +94,38 @@ export function ResultsPage() {
           >
             {activities.map((a) => (
               <option key={a.activityId} value={a.activityId}>
-                {a.title}（{a.phase}）
+                {a.title}（{PHASE_LABEL[a.phase] ?? a.phase}）
               </option>
             ))}
           </select>
-          <button type="button" className="btn btn-sm" onClick={() => load(activityId)} disabled={!activityId || busy}>
-            刷新
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => activityId && void load(activityId)}
+            disabled={!activityId || busy}
+          >
+            {busy ? "刷新中…" : "刷新"}
           </button>
         </div>
       )}
 
       {error && <p className="error">{error}</p>}
 
-      {result && activityTitle && (
-        <section style={{ marginTop: 16 }}>
-          <h2 className="section-title">{activityTitle}</h2>
-          <p>
-            <span className="badge">{statusLabel(result)}</span>
-            {result.preparation === "READY" && result.publishedAt && (
-              <span className="text-muted" style={{ marginLeft: 8 }}>
-                公布于 {new Date(result.publishedAt).toLocaleString("zh-CN")}
-              </span>
-            )}
+      {result && activityTitle && outcome && (
+        <section className="student-result-outcome">
+          <p className="text-muted" style={{ margin: "0 0 8px" }}>
+            {activityTitle}
           </p>
-
-          {result.preparation === "PENDING" && (
-            <p className="text-muted">教师尚未完成主分配，请稍后再查看。</p>
-          )}
-
-          {result.preparation === "READY" && (
-            <ul className="text-muted" style={{ lineHeight: 1.6 }}>
-              <li>冻结序号：<span className="text-mono">{result.lotteryNumber}</span></li>
-              {result.status === "ASSIGNED" && (
-                <>
-                  <li>命中题目 ID：<span className="text-mono">{result.topicId}</span></li>
-                  {result.matchedRank != null && result.matchedRank > 1 && (
-                    <li>对应志愿顺位：第 {result.matchedRank} 志愿</li>
-                  )}
-                  {(result.matchedRank == null || result.matchedRank <= 1) && (
-                    <li>分配依据：你所选的班</li>
-                  )}
-                </>
-              )}
-              {result.status === "UNALLOCATED" && <li>你已提交选择，但未获得该班名额。</li>}
-              {result.status === "NOT_SUBMITTED" && <li>截止前未保存选择，不参与分配。</li>}
-              {result.rounds.length > 0 && (
-                <li>轮次明细（{result.rounds.length} 条）见接口返回；页面仅展示结论。</li>
-              )}
-            </ul>
+          <p
+            className={`student-result-headline student-result-headline--${outcome.tone}`}
+            role="status"
+          >
+            {outcome.headline}
+          </p>
+          {result.preparation === "READY" && result.publishedAt && (
+            <p className="text-muted" style={{ margin: "12px 0 0", fontSize: 13 }}>
+              公布时间 {new Date(result.publishedAt).toLocaleString("zh-CN")}
+            </p>
           )}
         </section>
       )}
