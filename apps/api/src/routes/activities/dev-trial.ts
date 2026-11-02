@@ -184,6 +184,12 @@ export async function resetTrialForActivity(activityId: string): Promise<void> {
       activityId,
     ]).catch(() => undefined);
     await client.query(
+      `UPDATE operation_log
+       SET batch_id = NULL, snapshot_id = NULL
+       WHERE activity_id = $1`,
+      [activityId],
+    );
+    await client.query(
       `DELETE FROM allocation_result
        WHERE batch_id IN (SELECT id FROM allocation_batch WHERE activity_id = $1)`,
       [activityId],
@@ -194,6 +200,7 @@ export async function resetTrialForActivity(activityId: string): Promise<void> {
       `UPDATE activity
        SET lifecycle = 'PUBLISHED',
            freeze_last_failure = NULL,
+           start_at = LEAST(start_at, NOW() - INTERVAL '1 minute'),
            deadline_at = NOW() + INTERVAL '7 days'
        WHERE id = $1 AND lifecycle IN ('PUBLISHED', 'ALLOCATED')`,
       [activityId],

@@ -93,7 +93,9 @@ export function DevTrialPanel({
     setNotice("");
     try {
       await postResetTrial(activityId);
-      setNotice("已清空本轮联调数据，可重新模拟或让学生改选。");
+      setNotice(
+        "已清空志愿/快照/分配，并回到填报期（截止已延至 7 天后）。可再点 ① 模拟或 ③ 截止。",
+      );
       onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : "清空失败");

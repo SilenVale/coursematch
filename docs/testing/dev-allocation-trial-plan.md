@@ -54,8 +54,8 @@
 
 ### 4.3 ② 清空本轮联调
 
-- [ ] 删除本活动所有 `preference`、冻结快照、分配批次及结果。
-- [ ] 活动 `lifecycle` 从 `ALLOCATED` 回到 **`PUBLISHED`**（若原为 `PUBLISHED` 保持）。
+- [ ] 删除本活动所有 `preference`、冻结快照、分配批次及结果；`operation_log` 上相关 FK 置空后再删批次/快照。
+- [ ] 活动 `lifecycle` 从 `ALLOCATED` 回到 **`PUBLISHED`**，且 **回到 FILLING**（`start_at` 不晚于现在、`deadline_at` 延 7 天）。
 - [ ] **不删** participant、topic、account；`config_version` 不变。
 - [ ] `CLOSED` / `VOID` 活动拒绝清空。
 
