@@ -34,6 +34,8 @@ export interface AssistantDraft {
   rosterText: string;
   rosterWritten: boolean;
   topic: AssistantTopic;
+  /** 已匹配的全校教务课种 id（仅本地草稿提示用）。 */
+  catalogCourseId: string | null;
   topicWritten: boolean;
   pending: ConfirmAction | null;
   /** 待确认添加的第二条及以后课程（首条已在 topic 里）。 */
@@ -68,6 +70,7 @@ export function emptyDraft(): AssistantDraft {
     rosterText: "",
     rosterWritten: false,
     topic: { courseName: "", instructor: "", schedule: "", capacity: null },
+    catalogCourseId: null,
     topicWritten: false,
     pending: null,
     awaiting: null,

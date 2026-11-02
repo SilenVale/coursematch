@@ -327,7 +327,7 @@ function planTurn(
   const draft = inputDraft ?? emptyDraft();
   const text = message.trim();
   if (!text) {
-    return { draft, reply: "说说这场选课的名称、截止时间、名单和课程。", confirm: null, execute: null };
+    return { draft, reply: "说说这场选课的名称、开始与截止时间、名单和课程。", confirm: null, execute: null };
   }
 
   if (isCancelMessage(text)) {

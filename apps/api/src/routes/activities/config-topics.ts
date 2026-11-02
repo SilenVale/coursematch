@@ -32,6 +32,7 @@ export const MAX_TAG_LENGTH = 24;
 export interface TopicRow {
   id: string;
   activity_id: string;
+  catalog_course_id: string | null;
   title: string;
   description: string;
   tags: string[] | null;

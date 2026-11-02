@@ -11,6 +11,8 @@ import {
   saveTeacherSession,
   type TeacherSessionPayload,
 } from "../assistant/teacher-session-db.js";
+import { findCatalogByNormalizedName } from "../catalog/catalog-db.js";
+import { catalogCourseHint } from "../catalog/catalog-hint.js";
 import { pool } from "../db/pool.js";
 import type { ChatTurn } from "../assistant/memory.js";
 import { emptyDraft, type AssistantDraft } from "../assistant/model.js";
@@ -164,7 +166,23 @@ export const assistantRoutes: FastifyPluginAsync = async (app) => {
     } else {
       planned = step(current, message, now);
     }
-    if (!planned.execute) return ok(planned);
+    if (!planned.execute) {
+      const prevCourse = (current.topic?.courseName ?? "").trim();
+      const nextCourse = (planned.draft.topic?.courseName ?? "").trim();
+      if (nextCourse && nextCourse !== prevCourse && !planned.reply.includes("教务目录")) {
+        const found = await findCatalogByNormalizedName(pool, nextCourse);
+        const hint = catalogCourseHint(nextCourse, !!found);
+        planned = {
+          ...planned,
+          draft: {
+            ...planned.draft,
+            catalogCourseId: found?.id ?? null,
+          },
+          reply: planned.reply ? `${planned.reply}\n${hint}` : hint,
+        };
+      }
+      return ok(planned);
+    }
 
     const executed = await executeAction(app, req, planned.execute, planned.draft);
     return ok({

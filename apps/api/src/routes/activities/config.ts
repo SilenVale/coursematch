@@ -52,6 +52,7 @@ import {
   requireDraft,
   validateEligibleIds,
 } from "./config-topics-db.js";
+import { resolveOrCreateCatalogCourse } from "../../catalog/catalog-db.js";
 
 /** 可编辑的字段 → 数据库列名。 */
 const ACTIVITY_FIELD_COLUMNS = {
@@ -998,17 +999,30 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(status).send(body);
       }
 
+      const catalogCourseName =
+        typeof input.catalogCourseName === "string" ? input.catalogCourseName.trim() : "";
+
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
+        let catalogCourseId: string | null = null;
+        if (catalogCourseName) {
+          const { row: catalogRow } = await resolveOrCreateCatalogCourse(
+            client,
+            catalogCourseName,
+            req.actor!.accountId,
+          );
+          catalogCourseId = catalogRow.id;
+        }
         const { rows: created } = await client.query<TopicRow>(
           `INSERT INTO topic (
-             id, activity_id, title, description, tags, capacity,
+             id, activity_id, catalog_course_id, title, description, tags, capacity,
              eligibility_mode, eligibility_description
-           ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+           ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING *`,
           [
             row.id,
+            catalogCourseId,
             values.title,
             values.description ?? "",
             values.tags ?? [],

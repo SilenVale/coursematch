@@ -11,6 +11,7 @@ import {
 const baseRow: TopicRow = {
   id: "topic-1",
   activity_id: "act-1",
+  catalog_course_id: null,
   title: "基于 React 的选题系统",
   description: "做一个选题系统",
   tags: ["前端", "React"],

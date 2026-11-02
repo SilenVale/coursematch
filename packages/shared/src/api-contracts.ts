@@ -93,7 +93,11 @@ export type TopicInput = TopicFields & (
   | { eligibilityMode: "EXPLICIT"; eligibleParticipantIds: Id[] }
 );
 export type TopicPatchInput = AtLeastOne<TopicFields & { eligibilityMode: "ALL" | "EXPLICIT"; eligibleParticipantIds: Id[] }> & ConfigVersionInput;
-export type TopicCreateInput = TopicInput & ConfigVersionInput;
+export type TopicCreateInput = TopicInput &
+  ConfigVersionInput & {
+    /** 课种名：写入 topic 时解析/登记全校教务目录并设置 catalog_course_id。 */
+    catalogCourseName?: string;
+  };
 export interface TopicCommonView extends TopicFields {
   topicId: Id;
   eligibilityMode: "ALL" | "EXPLICIT";
