@@ -60,6 +60,16 @@ export async function postResetTrial(activityId: string) {
   return parseJson(res);
 }
 
+export async function postReachDeadline(activityId: string) {
+  const res = await fetch(`/api/activities/${activityId}/dev/reach-deadline`, {
+    method: "POST",
+    credentials: "include",
+    headers: JSON_HEADERS,
+    body: "{}",
+  });
+  return parseJson(res);
+}
+
 export async function postRunAllocationTrial(
   activityId: string,
   body: {

@@ -2,20 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchDevToolsEnabled,
   fetchTrialPreview,
+  postReachDeadline,
   postResetTrial,
-  postRunAllocationTrial,
   postSimulatePreferences,
   type SimulateStrategy,
 } from "./devTrialApi";
-
-type StepKey = "simulate" | "deadline" | "freeze" | "allocate";
-
-const STEP_LABEL: Record<StepKey, string> = {
-  simulate: "模拟全员填报",
-  deadline: "联调截止",
-  freeze: "生成冻结快照",
-  allocate: "执行主分配",
-};
 
 export function DevTrialPanel({
   activityId,
@@ -39,17 +30,6 @@ export function DevTrialPanel({
 
   const [simStrategy, setSimStrategy] = useState<SimulateStrategy>("same_first");
   const [skipUnfilled, setSkipUnfilled] = useState(0);
-
-  const [runModal, setRunModal] = useState(false);
-  const [runSteps, setRunSteps] = useState<Record<StepKey, boolean>>({
-    simulate: true,
-    deadline: true,
-    freeze: true,
-    allocate: true,
-  });
-  const [runProgress, setRunProgress] = useState<
-    { key: StepKey; status: "pending" | "active" | "done" | "fail"; detail?: string }[]
-  >([]);
 
   const loadPreview = useCallback(async () => {
     if (!activityId || !enabled) return;
@@ -122,55 +102,26 @@ export function DevTrialPanel({
     }
   }
 
-  async function handleRunTrial() {
-    const keys: StepKey[] = ["simulate", "deadline", "freeze", "allocate"];
-    const selected = keys.filter((k) => runSteps[k]);
-    setRunProgress(selected.map((k) => ({ key: k, status: "active" as const })));
-    setBusy("run");
+  async function handleReachDeadline() {
+    setBusy("deadline");
     setError("");
-
+    setNotice("");
     try {
-      const data = (await postRunAllocationTrial(activityId, {
-        ...runSteps,
-        strategy: simStrategy,
-        skipUnfilledCount: skipUnfilled,
-      })) as {
-        steps: { step: string; ok: boolean; detail?: unknown }[];
-        allocation?: { counts: { assigned: number; unallocated: number; notSubmitted: number } };
+      const result = (await postReachDeadline(activityId)) as {
+        alreadyAtDeadline: boolean;
+        adjustedStart: boolean;
+        adjustedDeadline: boolean;
       };
-
-      setRunProgress(
-        selected.map((k, i) => {
-          const row = data.steps[i];
-          const detail =
-            row?.step === "simulate" && row.detail && typeof row.detail === "object"
-              ? `写入 ${(row.detail as { writtenCount?: number }).writtenCount ?? "?"} 人`
-              : row?.step === "allocate" && row.detail && typeof row.detail === "object"
-                ? `已分配 ${(row.detail as { counts?: { assigned?: number } }).counts?.assigned ?? "?"}`
-                : undefined;
-          return { key: k, status: "done" as const, detail };
-        }),
-      );
-
-      const c = data.allocation?.counts;
-      if (c) {
-        setNotice(
-          `联调完成：已分配 ${c.assigned} · 落选 ${c.unallocated} · 未提交 ${c.notSubmitted}`,
-        );
+      if (result.alreadyAtDeadline) {
+        setNotice("已是「已截止」状态，请用上方「生成冻结快照」等正式按钮继续。");
       } else {
-        setNotice("联调步骤已完成（未执行主分配）。");
+        setNotice(
+          "已到达截止。请用上方「生成冻结快照 → 执行主分配 → 查看证据」走正式主流程。",
+        );
       }
-      setRunModal(false);
       onChanged();
     } catch (e) {
-      const err = e as Error & { steps?: unknown[] };
-      setRunProgress((prev) => {
-        const failIdx = prev.findIndex((r) => r.status === "active");
-        return prev.map((row, idx) =>
-          idx === failIdx ? { ...row, status: "fail", detail: err.message } : row,
-        );
-      });
-      setError(err.message);
+      setError(e instanceof Error ? e.message : "截止失败");
     } finally {
       setBusy(null);
     }
@@ -191,9 +142,9 @@ export function DevTrialPanel({
       {open && (
         <div className="dev-trial-body">
           <p className="text-muted" style={{ marginTop: 0 }}>
-            第 1 轮分配测试：模拟填报、清空、一键跑通冻结与主分配。已截止时
-            ①/③ 会自动把截止延至 7 天后（仅 Dev）。正式环境请关闭{" "}
-            <code>ENABLE_DEV_TOOLS</code>。
+            联调只负责<strong>造数据、造阶段</strong>：模拟填报 →（可选）立即截止 →
+            再用上方<strong>正式按钮</strong>冻结与主分配。已截止时点 ① 会自动把截止延 7
+            天以便重填（仅 Dev）。正式环境请关闭 <code>ENABLE_DEV_TOOLS</code>。
           </p>
           {preview && (
             <p className="text-muted">
@@ -249,78 +200,14 @@ export function DevTrialPanel({
               type="button"
               className="btn btn-primary"
               disabled={busy !== null}
-              onClick={() => {
-                setRunModal(true);
-                setRunProgress([]);
-                setError("");
-              }}
+              onClick={() => void handleReachDeadline()}
             >
-              ③ 一键跑通分配
+              {busy === "deadline" ? "处理中…" : "③ 立即到达截止"}
             </button>
           </div>
 
           {notice && <p className="notice">{notice}</p>}
           {error && <p className="error">{error}</p>}
-        </div>
-      )}
-
-      {runModal && (
-        <div className="dev-trial-modal-backdrop" role="dialog" aria-modal="true">
-          <div className="dev-trial-modal card">
-            <h3 className="section-title">一键跑通分配</h3>
-            <p className="text-muted">
-              {activityTitle ? `「${activityTitle}」` : "本课种"} · 任一步失败即停止
-            </p>
-            <ul className="dev-trial-step-checks">
-              {(Object.keys(STEP_LABEL) as StepKey[]).map((key) => (
-                <li key={key}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={runSteps[key]}
-                      disabled={busy === "run"}
-                      onChange={(e) =>
-                        setRunSteps({ ...runSteps, [key]: e.target.checked })
-                      }
-                    />
-                    {STEP_LABEL[key]}
-                  </label>
-                </li>
-              ))}
-            </ul>
-            {runProgress.length > 0 && (
-              <ol className="dev-trial-step-progress">
-                {runProgress.map((row) => (
-                  <li key={row.key} className={`dev-trial-step-${row.status}`}>
-                    {row.status === "done" && "✓ "}
-                    {row.status === "active" && "● "}
-                    {row.status === "fail" && "✗ "}
-                    {row.status === "pending" && "○ "}
-                    {STEP_LABEL[row.key]}
-                    {row.detail ? ` — ${row.detail}` : ""}
-                  </li>
-                ))}
-              </ol>
-            )}
-            <div className="btn-row">
-              <button
-                type="button"
-                className="btn"
-                disabled={busy === "run"}
-                onClick={() => setRunModal(false)}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={busy === "run"}
-                onClick={() => void handleRunTrial()}
-              >
-                {busy === "run" ? "执行中…" : "开始执行"}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </section>

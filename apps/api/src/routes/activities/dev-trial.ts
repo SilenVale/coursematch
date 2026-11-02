@@ -208,18 +208,74 @@ export async function resetTrialForActivity(activityId: string): Promise<void> {
 }
 
 async function bumpDeadlineToPast(activityId: string): Promise<boolean> {
-  const { rows } = await pool.query<{ deadline_at: Date }>(
-    `SELECT deadline_at FROM activity WHERE id = $1`,
-    [activityId],
-  );
-  const deadline = rows[0]?.deadline_at;
-  if (!deadline) return false;
-  if (new Date() >= deadline) return false;
-  await pool.query(
-    `UPDATE activity SET deadline_at = NOW() - INTERVAL '1 minute' WHERE id = $1`,
-    [activityId],
-  );
-  return true;
+  const result = await reachDeadlineForActivity(activityId);
+  return result.adjustedDeadline || result.adjustedStart;
+}
+
+/** Dev：把活动推到「已截止」，便于走正式「冻结 / 主分配」按钮。 */
+export async function reachDeadlineForActivity(activityId: string): Promise<{
+  alreadyAtDeadline: boolean;
+  adjustedStart: boolean;
+  adjustedDeadline: boolean;
+}> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query<{
+      start_at: Date;
+      deadline_at: Date;
+      lifecycle: Lifecycle;
+      db_now: Date;
+    }>(`SELECT start_at, deadline_at, lifecycle, NOW() AS db_now FROM activity WHERE id = $1 FOR UPDATE`, [
+      activityId,
+    ]);
+    const act = rows[0];
+    if (!act) throw new Error("活动不存在");
+    if (act.lifecycle === "CLOSED" || act.lifecycle === "VOID" || act.lifecycle === "DRAFT") {
+      throw new Error("当前状态不可联调截止");
+    }
+    if (act.lifecycle === "ALLOCATED") {
+      throw new Error("已主分配，请先用「清空本轮联调」再测");
+    }
+
+    const phase = derivePhase(
+      act.lifecycle,
+      act.start_at,
+      act.deadline_at,
+      act.db_now,
+    );
+    if (phase === "DEADLINE_REACHED") {
+      await client.query("COMMIT");
+      return { alreadyAtDeadline: true, adjustedStart: false, adjustedDeadline: false };
+    }
+    if (phase !== "FILLING" && phase !== "NOT_STARTED") {
+      throw new Error("当前阶段不可立即截止");
+    }
+
+    let adjustedStart = false;
+    let adjustedDeadline = false;
+    if (act.db_now.getTime() < act.start_at.getTime()) {
+      await client.query(
+        `UPDATE activity SET start_at = NOW() - INTERVAL '2 minutes' WHERE id = $1`,
+        [activityId],
+      );
+      adjustedStart = true;
+    }
+    if (act.db_now.getTime() < act.deadline_at.getTime()) {
+      await client.query(
+        `UPDATE activity SET deadline_at = NOW() - INTERVAL '1 minute' WHERE id = $1`,
+        [activityId],
+      );
+      adjustedDeadline = true;
+    }
+    await client.query("COMMIT");
+    return { alreadyAtDeadline: false, adjustedStart, adjustedDeadline };
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 async function freezeActivityDev(
@@ -450,6 +506,28 @@ export const devTrialRoutes: FastifyPluginAsync = async (app) => {
         return ok(result);
       } catch (e) {
         const message = e instanceof Error ? e.message : "模拟填报失败";
+        const { status, body } = fail("INVALID_INPUT", message, 409);
+        return reply.code(status).send(body);
+      }
+    },
+  );
+
+  app.post<{ Params: { activityId: string } }>(
+    "/api/activities/:activityId/dev/reach-deadline",
+    async (req, reply) => {
+      if (!isDevToolsEnabled()) return devDisabled(reply);
+      if (!req.actor || req.actor.role !== "TEACHER") {
+        const { status, body } = fail("ROLE_FORBIDDEN", "仅教师可操作", 403);
+        return reply.code(status).send(body);
+      }
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+
+      try {
+        const result = await reachDeadlineForActivity(row.id);
+        return ok(result);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "截止联调失败";
         const { status, body } = fail("INVALID_INPUT", message, 409);
         return reply.code(status).send(body);
       }

@@ -18,9 +18,9 @@
 
 | # | 按钮 | 行为 |
 |---|------|------|
-| ① | 模拟全员填报 | Modal：策略（同班/轮询/随机）、留 N 人不填 → 仅写 `preference` |
+| ① | 模拟全员填报 | 策略（同班/轮询/随机）、留 N 人不填 → 仅写 `preference` |
 | ② | 清空本轮联调 | 二次确认 → 删志愿/快照/分配，活动回到 `PUBLISHED` |
-| ③ | 一键跑通分配 | Modal：可勾选 1～4 步，步骤条执行，失败即停 |
+| ③ | 立即到达截止 | 将开始/截止调到过去 → 页面呈「已截止」；**冻结与主分配走上方正式按钮** |
 
 `ENABLE_DEV_TOOLS` 为假时：整块不渲染（不依赖前端构建变量）。
 
@@ -32,7 +32,8 @@
 | GET | `/api/activities/:id/dev/trial-preview` | 名单/开号/班数量 |
 | POST | `/api/activities/:id/dev/simulate-preferences` | body: strategy, skipUnfilledCount |
 | POST | `/api/activities/:id/dev/reset-trial` | 清空联调数据 |
-| POST | `/api/activities/:id/dev/run-allocation-trial` | body: steps 与 simulate 参数 |
+| POST | `/api/activities/:id/dev/reach-deadline` | 立即到达截止（Dev） |
+| POST | `/api/activities/:id/dev/run-allocation-trial` | （遗留）流水线；UI 已不用，正式流程走页面按钮 |
 
 ## 4. 验收标准
 
