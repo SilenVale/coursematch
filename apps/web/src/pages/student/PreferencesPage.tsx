@@ -72,6 +72,16 @@ export function PreferencesPage() {
     return selectedId !== savedOne;
   }, [selectedId, saved]);
 
+  const saveStatusHint = useMemo(() => {
+    if (dirty) {
+      return selectedId
+        ? "已选好，请点击「保存选择」才会写入服务器"
+        : "有未保存的改动，保存后才会更新服务器";
+    }
+    if (saved.length > 0) return "已保存到服务器";
+    return "尚未保存";
+  }, [dirty, selectedId, saved.length]);
+
   const titleOf = useCallback(
     (topicId: string) =>
       topics?.items.find((t) => t.topicId === topicId)?.title ?? topicId.slice(0, 8),
@@ -204,7 +214,7 @@ export function PreferencesPage() {
                     </td>
                     <td>
                       {picked ? (
-                        <span className="badge">已选</span>
+                        <span className="badge">{dirty ? "待保存" : "已保存"}</span>
                       ) : (
                         <button
                           type="button"
@@ -248,9 +258,7 @@ export function PreferencesPage() {
             >
               {busy ? "保存中…" : dirty ? "保存选择" : "已是最新"}
             </button>{" "}
-            <small className="text-muted">
-              {saved.length > 0 ? "已保存到服务器" : "尚未保存"}
-            </small>
+            <small className="text-muted">{saveStatusHint}</small>
           </p>
         </>
       )}
