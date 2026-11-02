@@ -105,11 +105,16 @@ export function ResultsPage() {
               {result.status === "ASSIGNED" && (
                 <>
                   <li>命中题目 ID：<span className="text-mono">{result.topicId}</span></li>
-                  <li>对应志愿顺位：第 {result.matchedRank} 志愿</li>
+                  {result.matchedRank != null && result.matchedRank > 1 && (
+                    <li>对应志愿顺位：第 {result.matchedRank} 志愿</li>
+                  )}
+                  {(result.matchedRank == null || result.matchedRank <= 1) && (
+                    <li>分配依据：你所选的班</li>
+                  )}
                 </>
               )}
-              {result.status === "UNALLOCATED" && <li>你已提交志愿，但各轮均未获得名额。</li>}
-              {result.status === "NOT_SUBMITTED" && <li>截止前未保存有效志愿，不参与分配。</li>}
+              {result.status === "UNALLOCATED" && <li>你已提交选择，但未获得该班名额。</li>}
+              {result.status === "NOT_SUBMITTED" && <li>截止前未保存选择，不参与分配。</li>}
               {result.rounds.length > 0 && (
                 <li>轮次明细（{result.rounds.length} 条）见接口返回；页面仅展示结论。</li>
               )}

@@ -103,21 +103,14 @@ export function PreferencesPage() {
       setVersion(result.version);
       setSaved(result.topicIds);
       setDraft(result.topicIds.slice(0, 1));
-      setNotice(
-        `已保存第 ${result.version} 版${
-          result.submittedAt ? ` · ${new Date(result.submittedAt).toLocaleString("zh-CN")}` : ""
-        }`,
-      );
+      setNotice("选择已保存。");
     } catch (e) {
       if (e instanceof StudentApiError && e.code === "VERSION_CONFLICT") {
         try {
           const latest = await fetchMyPreferences(activityId);
           setVersion(latest.version);
           setSaved(latest.topicIds);
-          setNotice(
-            `志愿已在别处更新，已加载最新版本（第 ${latest.version} 版）；` +
-              `你当前的选择尚未保存，确认后再点「保存选择」。`,
-          );
+          setNotice("服务器上的选择已更新；你这边改动的内容尚未保存，请确认后再点「保存选择」。");
         } catch (refreshError) {
           setError(refreshError instanceof Error ? refreshError.message : "刷新失败");
         }
@@ -131,9 +124,9 @@ export function PreferencesPage() {
 
   return (
     <div className="card">
-      <h1 className="page-head">志愿填报</h1>
+      <h1 className="page-head">选课填报</h1>
       <p className="lead">
-        每门课（每轮选课）选 1 位老师所在的班；可同时参与任意多门已发布的选课。截止后不可修改。
+        在下拉里选一门课，再选一位老师的班（每门课只能选一个班）。你可以同时参与多门已发布的选课，没有数量上限。截止后不能改。
       </p>
 
       {activities.length === 0 && <p className="text-muted">暂无已发布的选课。</p>}
@@ -256,8 +249,7 @@ export function PreferencesPage() {
               {busy ? "保存中…" : dirty ? "保存选择" : "已是最新"}
             </button>{" "}
             <small className="text-muted">
-              当前版本 {version}
-              {saved.length > 0 ? "，已保存" : "，尚未保存"}
+              {saved.length > 0 ? "已保存到服务器" : "尚未保存"}
             </small>
           </p>
         </>

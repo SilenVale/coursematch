@@ -10,14 +10,14 @@ const TEACHER_NAV = [
 
 const STUDENT_NAV = [
   { to: "/", label: "工作台", end: true },
-  { to: "/student/preferences", label: "志愿填报" },
+  { to: "/student/preferences", label: "选课填报" },
   { to: "/student/results", label: "我的结果" },
 ] as const;
 
 function pageTitle(pathname: string): string {
   if (pathname.startsWith("/teacher/assistant")) return "选课助理";
   if (pathname.startsWith("/teacher/courses")) return "我的课";
-  if (pathname.startsWith("/student/preferences")) return "志愿填报";
+  if (pathname.startsWith("/student/preferences")) return "选课填报";
   if (pathname.startsWith("/student/results")) return "我的结果";
   return "工作台";
 }
