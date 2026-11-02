@@ -59,7 +59,9 @@ export function RosterPanel({
   const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState("");
   const [preview, setPreview] = useState<RosterPreview | null>(null);
-  const [busy, setBusy] = useState<"preview" | "replace" | "provision" | null>(null);
+  const [busy, setBusy] = useState<"preview" | "replace" | "provision" | "resetPw" | null>(
+    null,
+  );
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [notice, setNotice] = useState("");
   const [tableExpanded, setTableExpanded] = useState(false);
