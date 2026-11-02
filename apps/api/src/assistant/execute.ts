@@ -79,19 +79,20 @@ async function executeAddTopic(
     req,
     "POST",
     `/api/activities/${draft.activityId}/topics`,
-    JSON.stringify({
-      title: offerTitle(topic.instructor, topic.courseName),
-      description: offerDescription(topic.instructor, topic.schedule),
-      tags: [],
-      capacity: topic.capacity,
-      eligibilityMode: "ALL",
-      eligibilityDescription: "",
-      expectedConfigVersion: draft.configVersion,
-    }),
-  );
-  if (createdTopic.status >= 400) {
-    return {
-      draft: { ...draft, pending: "add_topic" },
+      JSON.stringify({
+        title: offerTitle(topic.instructor, topic.courseName),
+        description: offerDescription(topic.instructor, topic.schedule),
+        tags: [],
+        capacity: topic.capacity,
+        eligibilityMode: "ALL",
+        eligibilityDescription: "",
+        expectedConfigVersion: draft.configVersion,
+        catalogCourseName: topic.courseName,
+      }),
+    );
+    if (createdTopic.status >= 400) {
+      return {
+        draft: { ...draft, pending: "add_topic" },
       reply: `${errorText(createdTopic.json, "课程没有添加")}\n改完后回复「确认」再试。`,
     };
   }
@@ -285,6 +286,7 @@ async function executeCreate(
         eligibilityMode: "ALL",
         eligibilityDescription: "",
         expectedConfigVersion: next.configVersion,
+        catalogCourseName: next.topic.courseName,
       }),
     );
     if (createdTopic.status >= 400) {

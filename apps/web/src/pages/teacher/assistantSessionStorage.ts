@@ -17,6 +17,7 @@ export interface AssistantDraft {
   rosterText: string;
   rosterWritten: boolean;
   topic: AssistantTopic;
+  catalogCourseId?: string | null;
   topicWritten: boolean;
   pending: "create" | "publish" | "provision" | "freeze" | "allocate" | "add_topic" | null;
   pendingAddTopic?: AssistantTopic | null;
@@ -32,7 +33,7 @@ export type ChatLine = { role: "teacher" | "assistant"; text: string };
 
 export const ASSISTANT_WELCOME: ChatLine = {
   role: "assistant",
-  text: "把这场选课说清楚就行。\n需要名称、截止时间、名单和一门课。\n缺的我会逐项问。\n确认之后才会写入。",
+  text: "把这场选课说清楚就行。\n需要名称、开始与截止时间、名单和一门课。\n缺的我会逐项问。\n确认之后才会写入。",
 };
 
 interface StoredSession {

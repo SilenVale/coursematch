@@ -19,6 +19,7 @@ export async function clearAllSeedData(pool: Pool): Promise<void> {
   await pool.query("DELETE FROM preference_submission");
   await pool.query("DELETE FROM topic_eligible_participant");
   await pool.query("DELETE FROM topic");
+  await pool.query("DELETE FROM course_catalog");
   await pool.query("DELETE FROM participant");
   await pool.query("DELETE FROM activity");
   await pool.query("DELETE FROM session");

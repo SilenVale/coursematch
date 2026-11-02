@@ -93,7 +93,10 @@ export type TopicInput = TopicFields & (
   | { eligibilityMode: "EXPLICIT"; eligibleParticipantIds: Id[] }
 );
 export type TopicPatchInput = AtLeastOne<TopicFields & { eligibilityMode: "ALL" | "EXPLICIT"; eligibleParticipantIds: Id[] }> & ConfigVersionInput;
-export type TopicCreateInput = TopicInput & ConfigVersionInput;
+export type TopicCreateInput = TopicInput &
+  ConfigVersionInput & {
+    catalogCourseName?: string;
+  };
 export interface TopicCommonView extends TopicFields {
   topicId: Id;
   eligibilityMode: "ALL" | "EXPLICIT";

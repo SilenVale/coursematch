@@ -23,6 +23,7 @@ import { activityReadRoutes } from "./routes/activities/read.js";
 import { activityResultsRoutes } from "./routes/activities/results.js";
 import { activityStubRoutes } from "./routes/activities/stubs.js";
 import { assistantRoutes } from "./routes/assistant.js";
+import { catalogRoutes } from "./routes/catalog.js";
 import { demoRoleCheck } from "./routes/role-guard.js";
 
 export async function buildApp() {
@@ -56,6 +57,7 @@ export async function buildApp() {
   await app.register(activityPreferenceRoutes);
   await app.register(activityStubRoutes);
   await app.register(assistantRoutes);
+  await app.register(catalogRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));
 
