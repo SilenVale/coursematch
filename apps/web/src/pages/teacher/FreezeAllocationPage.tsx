@@ -9,6 +9,8 @@ import {
   apiFreezePost,
   apiTeacherResults,
 } from "./freezeApi";
+import { DevTrialPanel } from "./DevTrialPanel";
+import { getActivity } from "./configApi";
 
 type CourseOutlet = { activityId: string };
 
@@ -18,6 +20,7 @@ export function FreezeAllocationPage() {
   const [results, setResults] = useState<TeacherResultsView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [activityTitle, setActivityTitle] = useState("");
 
   const refresh = useCallback(async () => {
     if (!activityId) return;
@@ -37,6 +40,13 @@ export function FreezeAllocationPage() {
   useEffect(() => {
     refresh().catch((e) => setError(String(e)));
   }, [refresh]);
+
+  useEffect(() => {
+    if (!activityId) return;
+    getActivity(activityId)
+      .then((a) => setActivityTitle(a.title))
+      .catch(() => setActivityTitle(""));
+  }, [activityId]);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -116,6 +126,14 @@ export function FreezeAllocationPage() {
           关闭活动
         </button>
       </div>
+
+      {activityId && (
+        <DevTrialPanel
+          activityId={activityId}
+          activityTitle={activityTitle}
+          onChanged={() => void refresh()}
+        />
+      )}
 
       {results?.preparation === "READY" && (
         <section style={{ marginTop: 20 }}>

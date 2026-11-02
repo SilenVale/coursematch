@@ -32,6 +32,7 @@
 | `DEEPSEEK_API_KEY` | （可选）选课助理共用 DeepSeek 密钥，在 Dashboard 设为 **Secret**，勿写入仓库 |
 | `DEEPSEEK_API_URL` | （可选）OpenAI 兼容接口地址，自建代理时填写 |
 | `DEEPSEEK_MODEL` | （可选）默认 `deepseek-flash` |
+| `ENABLE_DEV_TOOLS` | `1` 时开放教师端 **分配结果 → 联调工具**（见 [dev-allocation-trial-plan.md](../testing/dev-allocation-trial-plan.md)） |
 
 **全员共用 DeepSeek 额度（任选其一）：**
 
