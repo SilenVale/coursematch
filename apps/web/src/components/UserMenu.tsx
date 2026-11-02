@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ActorView } from "@coursematch/shared";
-import { apiLogout } from "../api/client";
 import { DEMO_ACCOUNTS } from "../demoAccounts";
 
-export function UserMenu({ actor, onLogout }: { actor: ActorView; onLogout: () => void }) {
+export function UserMenu({
+  actor,
+  onLogout,
+}: {
+  actor: ActorView;
+  onLogout: () => void | Promise<void>;
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -19,9 +24,7 @@ export function UserMenu({ actor, onLogout }: { actor: ActorView; onLogout: () =
   }, []);
 
   async function logout() {
-    await apiLogout();
-    onLogout();
-    navigate("/login");
+    await onLogout();
   }
 
   return (
@@ -51,9 +54,8 @@ export function UserMenu({ actor, onLogout }: { actor: ActorView; onLogout: () =
               onClick={() => {
                 setOpen(false);
                 void (async () => {
-                  await apiLogout();
-                  onLogout();
-                  navigate(`/login?prefill=${encodeURIComponent(row.id)}`);
+                  await onLogout();
+                  navigate(`/login?prefill=${encodeURIComponent(row.id)}`, { replace: true });
                 })();
               }}
             >

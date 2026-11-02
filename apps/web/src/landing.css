@@ -1,0 +1,197 @@
+/* 落地页：Aeye 模板 CSS 动态加载；此处只做隔离与登录弹窗（oil-ui：不叠加第二套装饰） */
+
+body.landing-body {
+  margin: 0;
+  background: #1a1a1a;
+}
+
+/* 与原版一致：整段 hero 先深色，只有 .hero-layout / .hero-main 铺白；避免 main-wrapper 白底穿进黑区 */
+.landing-page .main-wrapper {
+  background-color: transparent;
+}
+
+.landing-page .section.hero {
+  background-color: #1a1a1a;
+  overflow: clip;
+}
+
+.landing-page .hero-header {
+  background-color: #1a1a1a;
+  flex: 1 1 auto;
+}
+
+.landing-page .hero-layout {
+  background-color: #fff;
+  z-index: 2;
+}
+
+.landing-page .hero-main {
+  background-color: #fff;
+}
+
+.landing-page .section:not(.hero),
+.landing-page .footer {
+  background-color: #fff;
+  position: relative;
+  z-index: 2;
+}
+
+/* —— Value 三栏（第二屏，对齐模板居中 grid）—— */
+.landing-value-section .value-layout,
+.landing-value-section .value-main {
+  width: 100%;
+}
+
+/* 与 Webflow 一致：hover 浮现蓝色，移开 0.5s 后收回（ix2 未绑定时 CSS 兜底） */
+.landing-page .pixel-grid {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+}
+
+.landing-page .pixel-box {
+  position: relative;
+}
+
+.landing-page .pixel-box-color {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.landing-page .pixel-box:hover .pixel-box-color {
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+.landing-page .pixel-box:not(:hover) .pixel-box-color {
+  transition-duration: 0.2s;
+  transition-delay: 0.5s;
+}
+
+.landing-value-section .value-card .value-card-icon._02 {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.landing-value-section .value-card .value-card-icon._01 {
+  transition: opacity 0.1s ease;
+}
+
+.landing-value-section .value-card:hover .value-card-title {
+  color: #0055ff;
+  transition: color 0.3s ease;
+}
+
+.landing-value-section .value-card:hover .value-card-icon._02 {
+  opacity: 1;
+}
+
+.landing-value-section .value-card:hover .value-card-icon._01 {
+  opacity: 0;
+}
+
+.landing-value-section .value-card .value-card-description {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.landing-value-section .value-card:hover .value-card-description {
+  max-height: 12rem;
+}
+
+@media (max-width: 991px) {
+  .landing-value-section .value-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 992px) {
+  .landing-page .hero-layout .container-base {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .landing-page .hero-layout .hero-top {
+    flex: 1 0 100%;
+    min-height: 0;
+    padding: 0;
+  }
+}
+
+.landing-page {
+  isolation: isolate;
+}
+
+.landing-brand-word {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.landing-brand-name {
+  font-family: "Geist", system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.landing-page .landing-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  padding: 0;
+  appearance: none;
+}
+
+.landing-login-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: oklch(0 0 0 / 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.landing-login-dialog {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: min(90dvh, 720px);
+  overflow: auto;
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+.landing-login-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted-foreground, #666);
+}
+
+.landing-login-close:hover {
+  background: oklch(0 0 0 / 0.06);
+}
+
+.login-form-title {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
