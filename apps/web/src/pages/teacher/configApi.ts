@@ -198,6 +198,19 @@ export function provisionParticipantAccounts(activityId: string): Promise<{
   });
 }
 
+/** 将本轮名单内已开通学号的密码重置为当前默认初始密码。 */
+export function resetParticipantStudentPasswords(activityId: string): Promise<{
+  resetCount: number;
+  identifiers: string[];
+  defaultPasswordHint: string;
+}> {
+  return request(`/api/activities/${activityId}/participants/reset-student-passwords`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({}),
+  });
+}
+
 // ------------------------------------------------------------------ 题目（第二批）
 
 export function listTopics(

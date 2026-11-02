@@ -40,3 +40,23 @@ export async function provisionAccountsForActivity(
 
   return { provisionedCount: identifiers.length, identifiers };
 }
+
+/** 将本活动名单内已建号学生的密码重置为当前默认初始密码（跨活动共用同一学号账号）。 */
+export async function resetStudentPasswordsForActivity(
+  pool: Pool,
+  activityId: string,
+): Promise<{ resetCount: number; identifiers: string[] }> {
+  const passwordHash = await bcrypt.hash(getStudentDefaultPassword(), 12);
+  const { rows } = await pool.query<{ identifier: string }>(
+    `UPDATE account acc
+     SET password_hash = $1
+     FROM participant p
+     WHERE p.activity_id = $2
+       AND p.student_profile_id = acc.student_profile_id
+       AND acc.role = 'STUDENT'
+     RETURNING acc.identifier`,
+    [passwordHash, activityId],
+  );
+  const identifiers = rows.map((r) => r.identifier).sort();
+  return { resetCount: identifiers.length, identifiers };
+}

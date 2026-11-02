@@ -19,6 +19,7 @@ import {
   previewRoster,
   provisionParticipantAccounts,
   replaceRoster,
+  resetParticipantStudentPasswords,
 } from "./configApi";
 import { Badge, ErrorBanner, formatBeijing, toApiError } from "./configUi";
 
@@ -170,6 +171,31 @@ export function RosterPanel({
     }
   }
 
+  async function handleResetStudentPasswords() {
+    if (
+      !window.confirm(
+        `将把本轮名单内 ${accountsReady} 名已开通学生的登录密码重置为当前初始密码（见 README，默认 12345678）。同一学号在其他选课中的登录也会变。确定继续？`,
+      )
+    ) {
+      return;
+    }
+    setBusy("resetPw");
+    setImportError(null);
+    setNotice("");
+    try {
+      const result = await resetParticipantStudentPasswords(activityId);
+      setNotice(
+        result.resetCount > 0
+          ? `已重置 ${result.resetCount} 人密码为 ${result.defaultPasswordHint}（学号登录不变）。`
+          : "名单内暂无已开通账号，无需重置。",
+      );
+    } catch (err) {
+      setImportError(toApiError(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <section className="cm-panel">
       <header className="cm-panel-head">
@@ -179,16 +205,28 @@ export function RosterPanel({
         </span>
       </header>
 
-      {accountsPending > 0 && (
-        <div className="cm-actions" style={{ marginBottom: 12 }}>
-          <button
-            type="button"
-            disabled={busy !== null}
-            onClick={() => void handleProvisionAccounts()}
-          >
-            {busy === "provision" ? "开通中…" : `为 ${accountsPending} 名未开通学生创建登录账号`}
-          </button>
-          <span className="cm-muted">账号为学号，初始密码见 README。</span>
+      {(accountsPending > 0 || accountsReady > 0) && (
+        <div className="cm-actions" style={{ marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          {accountsPending > 0 && (
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void handleProvisionAccounts()}
+            >
+              {busy === "provision" ? "开通中…" : `为 ${accountsPending} 名未开通学生创建登录账号`}
+            </button>
+          )}
+          {accountsReady > 0 && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={busy !== null}
+              onClick={() => void handleResetStudentPasswords()}
+            >
+              {busy === "resetPw" ? "重置中…" : "重置名单内学生初始密码"}
+            </button>
+          )}
+          <span className="cm-muted">账号为学号；新开通或重置后初始密码见 README（默认 12345678）。</span>
         </div>
       )}
 

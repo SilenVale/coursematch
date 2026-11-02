@@ -31,6 +31,7 @@ import { pool } from "../../db/pool.js";
 import {
   getStudentDefaultPassword,
   provisionAccountsForActivity,
+  resetStudentPasswordsForActivity,
 } from "../../lib/provision-student-accounts.js";
 import { fail, ok } from "../../lib/response.js";
 import {
@@ -647,6 +648,25 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
       const result = await provisionAccountsForActivity(pool, row.id);
       return ok({
         provisionedCount: result.provisionedCount,
+        identifiers: result.identifiers,
+        defaultPasswordHint: getStudentDefaultPassword(),
+      });
+    },
+  );
+
+  app.post<{ Params: { activityId: string } }>(
+    "/api/activities/:activityId/participants/reset-student-passwords",
+    async (req, reply) => {
+      if (req.actor?.role !== "TEACHER") {
+        const { status, body } = fail("ROLE_FORBIDDEN", "仅教师可操作", 403);
+        return reply.code(status).send(body);
+      }
+      const row = await loadOwnedActivity(req, reply, req.params.activityId);
+      if (!row) return reply;
+
+      const result = await resetStudentPasswordsForActivity(pool, row.id);
+      return ok({
+        resetCount: result.resetCount,
         identifiers: result.identifiers,
         defaultPasswordHint: getStudentDefaultPassword(),
       });
