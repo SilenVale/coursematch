@@ -1,5 +1,11 @@
 import type { FastifyPluginAsync } from "fastify";
-import type { ActivityPhase, ActivitySummary, ActivityView, Lifecycle } from "@coursematch/shared";
+import type {
+  ActivityPhase,
+  ActivitySummary,
+  ActivityView,
+  Lifecycle,
+  RosterImportView,
+} from "@coursematch/shared";
 import { pool } from "../../db/pool.js";
 import { fail, ok } from "../../lib/response.js";
 
@@ -33,7 +39,19 @@ function mapSummary(row: Record<string, unknown>): ActivitySummary {
   };
 }
 
-function mapView(row: Record<string, unknown>): ActivityView {
+function mapRosterImport(row: Record<string, unknown>): RosterImportView | null {
+  const csv = row.roster_csv_snapshot;
+  if (typeof csv !== "string" || !csv.trim()) return null;
+  const imported = row.roster_imported_at as Date | null | undefined;
+  return {
+    sourceLabel: (typeof row.roster_source_label === "string" && row.roster_source_label.trim()) ||
+      "未记录来源",
+    importedAt: imported instanceof Date ? imported.toISOString() : new Date(0).toISOString(),
+    csvText: csv,
+  };
+}
+
+function mapView(row: Record<string, unknown>, includeRosterImport = false): ActivityView {
   const summary = mapSummary(row);
   return {
     ...summary,
@@ -44,6 +62,7 @@ function mapView(row: Record<string, unknown>): ActivityView {
     freezePreparation: "PENDING",
     resultPreparation: "PENDING",
     allowedActions: [],
+    rosterImport: includeRosterImport ? mapRosterImport(row) : null,
   };
 }
 
@@ -97,7 +116,7 @@ export const activityReadRoutes: FastifyPluginAsync = async (app) => {
           const { status, body } = fail("RESOURCE_NOT_FOUND", "活动不存在", 404);
           return reply.code(status).send(body);
         }
-        return ok(mapView(row));
+        return ok(mapView(row, true));
       }
 
       const { rows: part } = await pool.query(

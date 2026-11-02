@@ -34,7 +34,7 @@ export type ChatLine = { role: "teacher" | "assistant"; text: string };
 
 export const ASSISTANT_WELCOME: ChatLine = {
   role: "assistant",
-  text: "把这场选课说清楚就行。\n先选教务课种（如软件工程）并确认，再填开始与截止时间、名单，以及你的教师/时间/名额。\n缺的我会逐项问；齐了之后确认创建才写入。",
+  text: "先选课种（如软件工程）并确认，再填开始与截止时间、名单，以及你的班（教师/时间/名额）。\n缺的我会逐项问；齐了之后确认创建才写入；发布前可在继续配置里核对。",
 };
 
 interface StoredSession {

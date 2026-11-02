@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-**V1 业务主链已在 `master` 接通**（本地或 Dev 公网可演示）：教师活动配置与发布、学生志愿、截止后冻结与主分配、教师汇总/证据/关闭、学生本人结果 API 与页面。Dev HTTPS 已上线；§1.4 八条证据汇总与 runbook 留证仍在推进中。
+**V1 业务主链已在 `master` 接通**（本地或 Dev 公网可演示）：教师按 **课种 / 班 / 发布** 配置与发布、学生志愿、截止后冻结与主分配、教师汇总/证据/关闭、学生本人结果 API 与页面。Dev HTTPS 已上线；§1.4 八条证据汇总与 runbook 留证仍在推进中。
 
 架构契约：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（来源：设计报告 v0.5，平台最高分 98.6）。类型：[docs/contracts/api-contracts.ts](docs/contracts/api-contracts.ts)（与 `packages/shared` 同步）。
 
@@ -44,12 +44,12 @@ set -a && source .env && set +a && npm run migrate && npm run seed
 
 | 角色 | 账号 | 说明 |
 |---|---|---|
-| 教师 | `teacher_blank` | 空账号，工作台无选课任务，从零新建 |
-| 教师 | `teacher_ready` | 已配置两条选课（需 `SEED_MODE=ready` 或 `full`） |
+| 教师 | `teacher_blank` | 空账号，工作台无课，从零新建 |
+| 教师 | `teacher_ready` | 已配置两条示例课种/轮次（需 `SEED_MODE=ready` 或 `full`） |
 | 教师 | `teacher01` | 兼容；`SEED_MODE=full` 时含旧版三条示例 |
 | 学生 | `20260001` / `20260002` | 可登录志愿填报与我的结果 |
 
-学生仅可见已发布且自己在名单内的选课；每位教师仅能看到自己创建的选课任务。
+学生仅可见已发布且自己在名单内的选课；每位教师仅能看到自己创建的本轮选课（后台 `activity`）。
 
 ### 测试
 

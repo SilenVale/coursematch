@@ -40,9 +40,9 @@ async function main() {
 
   console.log("Seed complete. SEED_MODE =", mode);
   console.log("Password for all demo accounts:", DEV_PASSWORD);
-  console.log("  teacher_blank  — 空教师，无选课任务");
-  console.log("  teacher_ready  — 已配置两条选课任务");
-  console.log("  teacher01      —", mode === "full" ? "含原三条示例活动" : "无预置选课任务");
+  console.log("  teacher_blank  — 空教师，工作台无课");
+  console.log("  teacher_ready  — 已配置两条示例课种/轮次");
+  console.log("  teacher01      —", mode === "full" ? "含原三条示例" : "无预置课");
   console.log("  20260001, 20260002 — 学生");
 
   await pool.end();

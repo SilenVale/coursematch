@@ -8,7 +8,7 @@
  * 按钮禁用只是提示（ARCHITECTURE「页面上的按钮状态只是提示，授权以服务端为准」）。
  */
 import { useCallback, useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { ActivityView } from "@coursematch/shared";
 import { ActivityBasicsForm } from "./ActivityBasicsForm";
 import { PublishPanel } from "./PublishPanel";
@@ -30,6 +30,7 @@ import {
   fromDateTimeLocal,
   toApiError,
 } from "./configUi";
+import { CONFIGURE_NAV_LABEL } from "./teacherCourseUi";
 import "./teacher-config.css";
 
 /** 新建草稿的默认值：一周后截止，避免教师每次都从头填时间。 */
@@ -85,26 +86,26 @@ export function CreateActivityForm({
 
   return (
     <div className="cm-create">
-      <h2>新建选课任务</h2>
+      <h2>新开一轮选课</h2>
       <p className="cm-muted">
-        草稿阶段可以自由修改。发布后，标题、时间、志愿数和名单都会锁定。
+        先填课种名称（与教务目录一致）。草稿阶段可改；发布后课种名、时间、志愿数与名单会锁定。
       </p>
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="cm-grid">
         <label className="cm-field cm-span-2">
-          <span>活动名称</span>
+          <span>课种名称</span>
           <input
             value={form.title}
             maxLength={120}
-            placeholder="例如：2026 春季《软件工程》选题"
+            placeholder="例如：软件工程"
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <FieldErrorText errors={errorsFor("title")} />
         </label>
 
         <label className="cm-field cm-span-2">
-          <span>活动说明</span>
+          <span>说明（可选）</span>
           <textarea
             rows={3}
             value={form.description}
@@ -165,6 +166,8 @@ type CourseOutlet = { activityId: string };
 
 export function ActivityConfigurePage() {
   const { activityId } = useOutletContext<CourseOutlet>();
+  const [searchParams] = useSearchParams();
+  const fromAssistant = searchParams.get("from") === "assistant";
   const [activity, setActivity] = useState<ActivityView | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<ApiError | null>(null);
@@ -241,9 +244,14 @@ export function ActivityConfigurePage() {
 
       {!loadingDetail && activity && (
         <>
+          {fromAssistant && (
+            <p className="cm-notice cm-assistant-config-hint" role="status">
+              助理已写入草稿内容，请核对以下内容（名单、题目名额），确认无误后再发布。
+            </p>
+          )}
           <div className="cm-summary">
             <div>
-              <h2>课程设置</h2>
+              <h2>{CONFIGURE_NAV_LABEL}</h2>
               <p className="cm-muted">名单 CSV、题目名额、发布或作废。</p>
             </div>
             <div className="cm-summary-meta">
@@ -268,8 +276,9 @@ export function ActivityConfigurePage() {
             activityId={activity.activityId}
             configVersion={activity.configVersion}
             editable={canEditBasics}
+            rosterImport={activity.rosterImport ?? null}
             onVersionChange={handleVersionChange}
-            onChanged={() => void loadCounts(activity.activityId)}
+            onChanged={() => void loadDetail()}
           />
 
           <TopicPanel

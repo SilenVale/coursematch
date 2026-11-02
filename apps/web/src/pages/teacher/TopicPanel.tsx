@@ -255,7 +255,7 @@ export function TopicPanel({
   return (
     <section className="cm-panel">
       <header className="cm-panel-head">
-        <h2>开设课程</h2>
+        <h2>开设的班</h2>
         <span className="cm-muted">
           {loading
             ? "加载中…"
@@ -266,7 +266,7 @@ export function TopicPanel({
       </header>
 
       <p className="cm-muted" style={{ marginTop: 0 }}>
-        学生填报志愿时选择的是这里的每一门课（授课教师、时间、名额）。与上方的「选课任务基本信息」不同：基本信息定整场规则，这里定具体可选课。
+        学生填报的是这里的每一个班（授课教师、时间、名额）。上方「基本信息」定本轮时间与志愿规则；这里定具体开设的班。
       </p>
 
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
@@ -274,7 +274,7 @@ export function TopicPanel({
       {pending ? (
         <div className="cm-pending">
           <p>
-            <strong>开设课程接口尚未实现（HTTP 501）。</strong>
+            <strong>开设班接口尚未实现（HTTP 501）。</strong>
           </p>
         </div>
       ) : topics.length === 0 ? (
@@ -348,13 +348,13 @@ export function TopicPanel({
           <button type="button" onClick={startCreate} disabled={!editable || busy}>
             添加教师课程
           </button>
-          {!editable && <span className="cm-muted">已发布，不可再改开设课程</span>}
+          {!editable && <span className="cm-muted">已发布，不可再改班</span>}
         </div>
       )}
 
       {formOpen && (
         <div className="cm-topic-form">
-          <h3>{editingId ? "编辑开设课程" : "添加开设课程"}</h3>
+          <h3>{editingId ? "编辑班" : "添加班"}</h3>
           <div className="cm-grid">
             <label className="cm-field">
               <span>授课教师</span>

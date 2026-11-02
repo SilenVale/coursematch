@@ -27,7 +27,7 @@ function buildChecklist(params: {
   const items: CheckItem[] = [];
 
   items.push({
-    label: "活动名称",
+    label: "课种",
     state: activity.title.trim() ? "ok" : "fail",
     detail: activity.title.trim() ? activity.title : "未填写",
   });
@@ -58,19 +58,19 @@ function buildChecklist(params: {
         ? "尚未加载"
         : participantCount > 0
           ? `${participantCount} 人`
-          : "名单为空，发布后没有学生能选择本活动",
+          : "名单为空，发布后没有学生能填报本轮选课",
   });
 
   items.push({
-    label: "开设课程",
+    label: "班（可选课）",
     state: topicPending ? "unknown" : topicCount === null ? "unknown" : topicCount > 0 ? "ok" : "fail",
     detail: topicPending
-      ? "开设课程接口尚未实现（501），无法确认"
+      ? "开设班接口尚未实现（501），无法确认"
       : topicCount === null
         ? "尚未加载"
         : topicCount > 0
-          ? `${topicCount} 门可选课`
-          : "至少需要一门可选课",
+          ? `${topicCount} 个班`
+          : "至少需要开设一个班",
   });
 
   return items;

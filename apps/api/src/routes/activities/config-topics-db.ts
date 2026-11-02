@@ -95,7 +95,7 @@ export async function publishBlockers(row: {
   const blockers: FieldError[] = [];
 
   if (row.title.trim() === "") {
-    blockers.push({ field: "title", code: "REQUIRED", message: "活动名称未填写" });
+    blockers.push({ field: "title", code: "REQUIRED", message: "课种名称未填写" });
   }
   if (new Date(row.start_at) >= new Date(row.deadline_at)) {
     blockers.push({

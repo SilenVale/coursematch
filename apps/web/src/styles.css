@@ -793,6 +793,32 @@ a.btn:hover {
   color: var(--foreground);
 }
 
+.assistant-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.assistant-toolbar-configure {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.assistant-toolbar-configure:hover {
+  background: color-mix(in oklab, var(--primary) 88%, var(--foreground));
+}
+
 .assistant-restart {
   border: 1px solid var(--border-strong);
   border-radius: 999px;
@@ -833,9 +859,60 @@ a.btn:hover {
   padding: 20px 4px 12px;
 }
 
-.assistant-meta {
+.assistant-create-success {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  animation: assistant-in 180ms var(--ease-out);
+}
+
+.assistant-create-success-lead {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--foreground);
+}
+
+.assistant-create-success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.assistant-create-success-primary {
+  align-self: auto;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.assistant-create-success-secondary {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.assistant-create-success-secondary:hover:not(:disabled) {
+  background: var(--secondary);
+}
+
+.assistant-create-success-secondary:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .assistant-msg {

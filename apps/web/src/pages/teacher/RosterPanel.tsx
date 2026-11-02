@@ -7,7 +7,12 @@
  * - 版本冲突（VERSION_CONFLICT）提示刷新，不自动覆盖。
  */
 import { useCallback, useEffect, useState } from "react";
-import type { ParticipantQuery, ParticipantView, RosterPreview } from "@coursematch/shared";
+import type {
+  ParticipantQuery,
+  ParticipantView,
+  RosterImportView,
+  RosterPreview,
+} from "@coursematch/shared";
 import {
   ApiError,
   listParticipants,
@@ -17,16 +22,31 @@ import {
 } from "./configApi";
 import { Badge, ErrorBanner, formatBeijing, toApiError } from "./configUi";
 
+const ROSTER_PREVIEW_ROWS = 10;
+
+function csvLineCount(text: string): number {
+  return text.split(/\n/).filter((line) => line.trim()).length;
+}
+
+function previewCsvLines(text: string, maxLines: number): string {
+  return text
+    .split(/\n/)
+    .slice(0, maxLines)
+    .join("\n");
+}
+
 export function RosterPanel({
   activityId,
   configVersion,
   editable,
+  rosterImport,
   onVersionChange,
   onChanged,
 }: {
   activityId: string;
   configVersion: number;
   editable: boolean;
+  rosterImport: RosterImportView | null;
   onVersionChange: (configVersion: number) => void;
   onChanged: () => void;
 }) {
@@ -41,6 +61,13 @@ export function RosterPanel({
   const [busy, setBusy] = useState<"preview" | "replace" | "provision" | null>(null);
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [notice, setNotice] = useState("");
+  const [tableExpanded, setTableExpanded] = useState(false);
+  const [csvExpanded, setCsvExpanded] = useState(false);
+
+  useEffect(() => {
+    setTableExpanded(false);
+    setCsvExpanded(false);
+  }, [rosterImport?.importedAt, rosterImport?.sourceLabel]);
 
   const loadList = useCallback(async () => {
     setLoadingList(true);
@@ -100,7 +127,8 @@ export function RosterPanel({
     setBusy("replace");
     setImportError(null);
     try {
-      const result = await replaceRoster(activityId, csvText, configVersion);
+      const sourceLabel = fileName.trim() || "粘贴的 CSV";
+      const result = await replaceRoster(activityId, csvText, configVersion, sourceLabel);
       setPreview(null);
       setCsvText("");
       setFileName("");
@@ -277,7 +305,41 @@ export function RosterPanel({
         </div>
       )}
 
-      <h3>当前名单</h3>
+      <h3>当前生效名单</h3>
+      {rosterImport ? (
+        <div className="cm-roster-source">
+          <p className="cm-roster-source-head">
+            <strong>导入来源：</strong>
+            {rosterImport.sourceLabel}
+            <span className="cm-muted">
+              {" "}
+              · 导入于 {formatBeijing(rosterImport.importedAt)} · 共 {csvLineCount(rosterImport.csvText)}{" "}
+              行
+            </span>
+          </p>
+          <p className="cm-muted cm-roster-source-hint">以下为服务端保存的 CSV 原文，可与本地文件核对。</p>
+          <pre className="cm-roster-csv-pre">
+            {csvExpanded
+              ? rosterImport.csvText.trimEnd()
+              : previewCsvLines(rosterImport.csvText.trimEnd(), ROSTER_PREVIEW_ROWS + 1)}
+          </pre>
+          {csvLineCount(rosterImport.csvText) > ROSTER_PREVIEW_ROWS + 1 && (
+            <button
+              type="button"
+              className="cm-roster-expand"
+              onClick={() => setCsvExpanded((v) => !v)}
+            >
+              {csvExpanded ? "收起 CSV" : `展开全部 CSV（${csvLineCount(rosterImport.csvText)} 行）`}
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="cm-muted cm-roster-source-missing">
+          尚未记录导入文件内容。在本功能上线前导入的名单，或尚未执行「确认替换」的，这里不会显示 CSV 原文。
+        </p>
+      )}
+
+      <h4 className="cm-roster-table-title">名单预览（前 {ROSTER_PREVIEW_ROWS} 人）</h4>
       <div className="cm-filters">
         <input
           placeholder="搜索学号或姓名"
@@ -305,44 +367,61 @@ export function RosterPanel({
       </div>
 
       {participants.length === 0 && !loadingList ? (
-        <p className="cm-empty">名单为空。导入 CSV 后学生才能看到并选择本活动的题目。</p>
+        <p className="cm-empty">名单为空。导入 CSV 后学生才能填报志愿。</p>
       ) : (
-        <div className="cm-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>学号</th>
-                <th>姓名</th>
-                <th>入学年</th>
-                <th>专业</th>
-                <th>班级</th>
-                <th>资格</th>
-                <th>账号</th>
-              </tr>
-            </thead>
-            <tbody>
-              {participants.map((p) => (
-                <tr key={p.participantId}>
-                  <td>{p.studentNumber}</td>
-                  <td>{p.name}</td>
-                  <td>{p.enrollmentYear}</td>
-                  <td>{p.major}</td>
-                  <td>{p.className}</td>
-                  <td>
-                    <Badge tone={p.eligible ? "ok" : "warn"}>
-                      {p.eligible ? "合格" : "不合格"}
-                    </Badge>
-                  </td>
-                  <td>
-                    <Badge tone={p.accountConfigured ? "ok" : "warn"}>
-                      {p.accountConfigured ? "已开通" : "未开通"}
-                    </Badge>
-                  </td>
+        <>
+          <div className="cm-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>学号</th>
+                  <th>姓名</th>
+                  <th>入学年</th>
+                  <th>专业</th>
+                  <th>班级</th>
+                  <th>资格</th>
+                  <th>账号</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {(tableExpanded ? participants : participants.slice(0, ROSTER_PREVIEW_ROWS)).map((p) => (
+                  <tr key={p.participantId}>
+                    <td>{p.studentNumber}</td>
+                    <td>{p.name}</td>
+                    <td>{p.enrollmentYear}</td>
+                    <td>{p.major}</td>
+                    <td>{p.className}</td>
+                    <td>
+                      <Badge tone={p.eligible ? "ok" : "warn"}>
+                        {p.eligible ? "合格" : "不合格"}
+                      </Badge>
+                    </td>
+                    <td>
+                      <Badge tone={p.accountConfigured ? "ok" : "warn"}>
+                        {p.accountConfigured ? "已开通" : "未开通"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {participants.length > ROSTER_PREVIEW_ROWS && (
+            <button
+              type="button"
+              className="cm-roster-expand"
+              onClick={() => setTableExpanded((v) => !v)}
+            >
+              {tableExpanded
+                ? "收起名单"
+                : `展开全部名单（共 ${participants.length} 人${
+                    filters.q || filters.major || filters.enrollmentYear || filters.className
+                      ? "，当前筛选"
+                      : ""
+                  }）`}
+            </button>
+          )}
+        </>
       )}
 
       <p className="cm-muted">

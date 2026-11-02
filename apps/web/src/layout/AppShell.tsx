@@ -16,7 +16,7 @@ const STUDENT_NAV = [
 
 function pageTitle(pathname: string): string {
   if (pathname.startsWith("/teacher/assistant")) return "选课助理";
-  if (pathname.startsWith("/teacher/courses")) return "选课任务";
+  if (pathname.startsWith("/teacher/courses")) return "我的课";
   if (pathname.startsWith("/student/preferences")) return "志愿填报";
   if (pathname.startsWith("/student/results")) return "我的结果";
   return "工作台";

@@ -148,7 +148,7 @@ function speak(reply: string, gap: string | null): string {
     .replace(/sk-[A-Za-z0-9_-]{8,}/g, "")
     .trim()
     .slice(0, 500);
-  if (!clean) return gap ?? "我是选课助理。我帮你把这场选课说清楚，确认之后才会写入。";
+  if (!clean) return gap ?? "我是选课助理。我帮你按课种、名单和班把本轮选课说清楚，确认之后才会写入。";
   if (gap && !coversGap(clean, gap)) return `${clean}\n${gap}`;
   return clean;
 }

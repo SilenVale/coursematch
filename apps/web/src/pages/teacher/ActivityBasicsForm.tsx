@@ -104,7 +104,7 @@ export function ActivityBasicsForm({
 
       <div className="cm-grid">
         <label className="cm-field cm-span-2">
-          <span>活动名称</span>
+          <span>课种名称</span>
           <input
             value={form.title}
             disabled={!canEditTitle}
@@ -115,7 +115,7 @@ export function ActivityBasicsForm({
         </label>
 
         <label className="cm-field cm-span-2">
-          <span>活动说明</span>
+          <span>说明（可选）</span>
           <textarea
             value={form.description}
             disabled={!canEditDescription}

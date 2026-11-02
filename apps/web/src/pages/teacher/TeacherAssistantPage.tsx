@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  CONFIGURE_NAV_LABEL,
+  isAssistantCreateSuccessReply,
+  teacherConfigurePath,
+} from "./teacherCourseUi";
 import { apiMe } from "../../api/client";
 import { draftFromExistingActivity } from "./assistantActivitySeed";
 import { getActivity, listTopics } from "./configApi";
@@ -109,7 +114,7 @@ async function postTurn(
   return body.data;
 }
 
-const LINK_ACTIVITY_HINT = /已接上选课任务「/;
+const LINK_ACTIVITY_HINT = /已接上课种「/;
 
 export function TeacherAssistantPage() {
   const navigate = useNavigate();
@@ -143,6 +148,7 @@ export function TeacherAssistantPage() {
   const [keySaving, setKeySaving] = useState(false);
   const [restartOpen, setRestartOpen] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [createSuccessActivityId, setCreateSuccessActivityId] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -178,7 +184,7 @@ export function TeacherAssistantPage() {
     const thread = threadRef.current;
     if (!thread) return;
     thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
-  }, [lines, confirm, busy, error]);
+  }, [lines, confirm, busy, error, createSuccessActivityId, draft?.activityId]);
 
   useEffect(() => {
     if (confirm) confirmBtnRef.current?.focus();
@@ -209,6 +215,16 @@ export function TeacherAssistantPage() {
         setDraft(stored.draft);
         setLines(stored.lines);
         setConfirm(stored.confirm);
+        const lastAssistant = [...stored.lines].reverse().find((line) => line.role === "assistant");
+        if (
+          lastAssistant &&
+          isAssistantCreateSuccessReply(lastAssistant.text) &&
+          stored.draft?.activityId
+        ) {
+          setCreateSuccessActivityId(stored.draft.activityId);
+        } else {
+          setCreateSuccessActivityId(null);
+        }
         saveAssistantSession(actor.accountId, stored);
       };
       try {
@@ -275,7 +291,7 @@ export function TeacherAssistantPage() {
         const seeded = draftFromExistingActivity(activity, teacherTopics);
         const hint: ChatLine = {
           role: "assistant",
-          text: `已接上选课任务「${activity.title}」。若要再加一位教师的可选课，直接说「再加刘老师，时间和名额跟之前一样」即可。`,
+          text: `已接上课种「${activity.title}」。若要再加一位教师的班，直接说「再加刘老师，时间和名额跟之前一样」即可。`,
         };
 
         if (progress) {
@@ -314,7 +330,7 @@ export function TeacherAssistantPage() {
       } catch {
         if (!cancelled) {
           activityLinkHandledRef.current = null;
-          setError("没能接上这场选课任务，仍可照常对话");
+          setError("没能接上这场课，仍可照常对话");
         }
       } finally {
         if (!cancelled) skipPersistRef.current = false;
@@ -328,6 +344,10 @@ export function TeacherAssistantPage() {
 
   const sessionBusy = busy || restarting;
   const hasProgress = assistantSessionHasProgress({ draft, lines, confirm });
+  const showCreateSuccess =
+    !!createSuccessActivityId &&
+    draft?.activityId === createSuccessActivityId &&
+    !confirm;
 
   async function applySessionRestart() {
     if (sessionBusy) return;
@@ -345,6 +365,7 @@ export function TeacherAssistantPage() {
       setDraft(fresh.draft);
       setLines(fresh.lines);
       setConfirm(fresh.confirm);
+      setCreateSuccessActivityId(null);
       setText("");
       setRestartOpen(false);
       inputRef.current?.focus();
@@ -428,6 +449,9 @@ export function TeacherAssistantPage() {
       setDraft(turn.draft);
       setConfirm(turn.confirm);
       setLines((prev) => [...prev, { role: "assistant", text: turn!.reply }]);
+      if (isAssistantCreateSuccessReply(turn.reply) && turn.draft.activityId) {
+        setCreateSuccessActivityId(turn.draft.activityId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "发送失败");
     } finally {
@@ -459,15 +483,25 @@ export function TeacherAssistantPage() {
     <div className="assistant">
       <header className="assistant-toolbar">
         <p className="assistant-toolbar-title">选课助理</p>
-        <button
-          type="button"
-          className="assistant-restart"
-          disabled={sessionBusy}
-          aria-haspopup={hasProgress ? "dialog" : undefined}
-          onClick={requestSessionRestart}
-        >
-          重启会话
-        </button>
+        <div className="assistant-toolbar-actions">
+          {draft?.activityId && (
+            <Link
+              to={teacherConfigurePath(draft.activityId, true)}
+              className="assistant-toolbar-configure"
+            >
+              {CONFIGURE_NAV_LABEL}
+            </Link>
+          )}
+          <button
+            type="button"
+            className="assistant-restart"
+            disabled={sessionBusy}
+            aria-haspopup={hasProgress ? "dialog" : undefined}
+            onClick={requestSessionRestart}
+          >
+            重启会话
+          </button>
+        </div>
       </header>
       {restartOpen && (
         <div className="assistant-key" role="dialog" aria-modal="true" aria-labelledby="assistant-restart-title">
@@ -588,11 +622,6 @@ export function TeacherAssistantPage() {
         </div>
       )}
       <div className="assistant-thread" ref={threadRef} aria-live="polite">
-        {draft?.activityId && (
-          <p className="assistant-meta">
-            <Link to={`/teacher/courses/${draft.activityId}/configure`}>打开课程设置</Link>
-          </p>
-        )}
         {lines.map((line, index) => (
           <p key={index} className={`assistant-msg assistant-msg-${line.role}`}>
             {line.text}
@@ -614,6 +643,29 @@ export function TeacherAssistantPage() {
             >
               {ACTION_LABEL[confirm.action] ?? "确认"}
             </button>
+          </div>
+        )}
+        {showCreateSuccess && draft?.activityId && (
+          <div className="assistant-create-success">
+            <p className="assistant-create-success-lead">
+              在这里核对名单、题目名额，再发布给学生填报。
+            </p>
+            <div className="assistant-create-success-actions">
+              <Link
+                to={teacherConfigurePath(draft.activityId, true)}
+                className="assistant-confirm-btn assistant-create-success-primary"
+              >
+                {CONFIGURE_NAV_LABEL}
+              </Link>
+              <button
+                type="button"
+                className="assistant-create-success-secondary"
+                disabled={busy}
+                onClick={() => void send("发布")}
+              >
+                继续用助理发布
+              </button>
+            </div>
           </div>
         )}
         {busy && (
@@ -643,7 +695,7 @@ export function TeacherAssistantPage() {
           value={text}
           rows={1}
           aria-label="跟助理说"
-          placeholder={confirm ? "补充缺的一项" : "描述这场选课，或补充缺的一项"}
+          placeholder={confirm ? "补充缺的一项" : "说课种、时间、名单或你的班，或补充缺的一项"}
           onChange={(event) => {
             setText(event.target.value);
             resizeInput(event.target);

@@ -163,6 +163,69 @@
   color: #6b5200;
 }
 
+.cm-assistant-config-hint {
+  margin-bottom: 16px;
+}
+
+.cm-roster-source {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 10px;
+  background: var(--secondary, #f7f7f8);
+}
+
+.cm-roster-source-head {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cm-roster-source-hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.cm-roster-source-missing {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.cm-roster-csv-pre {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 240px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-radius: 8px;
+  background: var(--background, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+}
+
+.cm-roster-table-title {
+  margin: 16px 0 8px;
+  font-size: 15px;
+  font-weight: 560;
+}
+
+.cm-roster-expand {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong, #ccc);
+  border-radius: 999px;
+  background: var(--background, #fff);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cm-roster-expand:hover {
+  background: var(--secondary, #f7f7f8);
+}
+
 .cm-notice {
   background: #eaf6ec;
   border: 1px solid #b7dfc0;

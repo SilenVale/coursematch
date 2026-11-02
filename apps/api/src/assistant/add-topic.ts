@@ -144,7 +144,7 @@ export function tryAddTopicTurn(
   if (addTopic.instructor === primary) {
     return {
       draft: normalizedDraft,
-      reply: "这位老师和已有课程重复了。请说另一位教师，或到「课程设置 → 开设课程」里点「添加教师课程」。",
+      reply: "这位老师和已有课程重复了。请说另一位教师，或到「继续配置（课程设置）→ 开设课程」里点「添加教师课程」。",
       confirm: null,
       execute: null,
     };
@@ -166,7 +166,7 @@ export function tryAddTopicTurn(
   return {
     draft: { ...normalizedDraft, pending: "add_topic", pendingAddTopic: addTopic },
     reply:
-      "可选课按「一位教师一行」分开。请确认是否添加第二位教师的课；确认后才会写入课程设置。若已有行里仍显示两位教师合在一起，请在「开设课程」里编辑第一行只保留一位教师。",
+      "可选课按「一位教师一行」分开。请确认是否添加第二位教师的课；确认后才会写入继续配置（课程设置）。若已有行里仍显示两位教师合在一起，请在「开设课程」里编辑第一行只保留一位教师。",
     confirm: { action: "add_topic", summary },
     execute: null,
   };

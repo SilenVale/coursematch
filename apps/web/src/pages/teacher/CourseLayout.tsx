@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useParams, Link } from "react-router-dom";
 import { getActivity } from "./configApi";
 import { PHASE_LABEL, LIFECYCLE_LABEL } from "./configUi";
+import { CONFIGURE_NAV_LABEL } from "./teacherCourseUi";
 
 const TABS = [
   { suffix: "overview", label: "概览" },
-  { suffix: "configure", label: "课程设置" },
+  { suffix: "configure", label: CONFIGURE_NAV_LABEL },
   { suffix: "results", label: "分配结果" },
 ] as const;
 
@@ -28,13 +29,13 @@ export function CourseLayout() {
         setMeta(phase);
       })
       .catch(() => {
-        setTitle("选课任务");
+        setTitle("课种");
         setMeta("");
       });
   }, [activityId]);
 
   if (!activityId) {
-    return <p className="error">缺少选课任务 ID</p>;
+    return <p className="error">缺少课程 ID</p>;
   }
 
   const base = `/teacher/courses/${activityId}`;
@@ -55,7 +56,7 @@ export function CourseLayout() {
           )}
         </div>
       </div>
-      <nav className="course-tabs" aria-label="本次选课">
+      <nav className="course-tabs" aria-label="本轮选课">
         {TABS.map((tab) => (
           <NavLink
             key={tab.suffix}

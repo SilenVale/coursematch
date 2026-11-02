@@ -153,7 +153,7 @@ function rosterSummary(text: string): string {
 function createSummary(draft: AssistantDraft): string[] {
   const activityLabel = draft.title.trim() || draft.topic.courseName;
   return [
-    `课种/活动：${activityLabel}`,
+    `课种：${activityLabel}`,
     `时间：${formatBeijing(draft.startAt!)} → ${formatBeijing(draft.deadlineAt!)}`,
     rosterSummary(draft.rosterText),
     `课程：${draft.topic.instructor} · ${draft.topic.courseName}，${draft.topic.schedule}，名额 ${draft.topic.capacity}`,
@@ -238,7 +238,7 @@ function replyForIntent(draft: AssistantDraft, action: ConfirmAction): TurnResul
     if (draft.lifecycle !== "DRAFT") {
       return {
         draft: { ...draft, pending: null },
-        reply: "这场选课已经不是草稿，不能再发布。",
+        reply: "本轮选课已经不是草稿，不能再发布。",
         confirm: null,
         execute: null,
       };

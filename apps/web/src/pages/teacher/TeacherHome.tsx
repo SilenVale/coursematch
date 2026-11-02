@@ -22,8 +22,8 @@ export function TeacherHome() {
     <div className="card teacher-home">
       <div className="teacher-home-head">
         <div>
-          <h1 className="page-head">我的选课任务</h1>
-          <p className="lead">创建并发布选课，学生在截止前填报志愿；截止后在「分配结果」中冻结并主分配。</p>
+          <h1 className="page-head">我的课</h1>
+          <p className="lead">按课种开一轮选课、开设你的班并发布；学生在截止前填报志愿；截止后在「分配结果」中冻结并主分配。</p>
         </div>
         <div className="btn-row">
           <button
@@ -38,7 +38,7 @@ export function TeacherHome() {
             className="btn btn-primary"
             onClick={() => navigate("/teacher/courses/new")}
           >
-            新建选课任务
+            新开一轮选课
           </button>
         </div>
       </div>
@@ -48,7 +48,7 @@ export function TeacherHome() {
 
       {!loading && items.length === 0 && (
         <div className="teacher-empty">
-          <p>还没有选课任务。点击「新建选课任务」从基本信息、名单与题目开始配置。</p>
+          <p>还没有课。点击「新开一轮选课」或使用「用助理创建」，先选课种再配置名单与班。</p>
           <p className="text-muted">
             演示：使用右上角切换 <code>teacher_ready</code> 查看已配置示例；<code>teacher_blank</code> 为空账号。
           </p>

@@ -172,15 +172,17 @@ export function replaceRoster(
   activityId: string,
   csvText: string,
   expectedConfigVersion: number,
+  sourceLabel?: string,
 ): Promise<RosterReplacedView> {
-  return request(
-    `/api/activities/${activityId}/participants?expectedConfigVersion=${expectedConfigVersion}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "text/csv; charset=utf-8", ...REQUEST_HEADER },
-      body: csvText,
-    },
-  );
+  const params = new URLSearchParams({
+    expectedConfigVersion: String(expectedConfigVersion),
+  });
+  if (sourceLabel?.trim()) params.set("sourceLabel", sourceLabel.trim());
+  return request(`/api/activities/${activityId}/participants?${params.toString()}`, {
+    method: "PUT",
+    headers: { "Content-Type": "text/csv; charset=utf-8", ...REQUEST_HEADER },
+    body: csvText,
+  });
 }
 
 /** 为本轮名单里尚未建号的学生创建登录账号（学号即账号，默认密码见 README）。 */

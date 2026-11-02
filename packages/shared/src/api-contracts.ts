@@ -55,6 +55,12 @@ export interface ActivitySummary {
   startAt: IsoDateTime;
   deadlineAt: IsoDateTime;
 }
+export interface RosterImportView {
+  sourceLabel: string;
+  importedAt: IsoDateTime;
+  csvText: string;
+}
+
 export interface ActivityView extends ActivitySummary {
   description: string;
   maxPreferences: number;
@@ -63,6 +69,8 @@ export interface ActivityView extends ActivitySummary {
   freezePreparation: FreezePreparation;
   resultPreparation: ResultPreparation;
   allowedActions: AllowedAction[];
+  /** 仅教师读详情时返回：最近一次整份替换的 CSV 与来源。 */
+  rosterImport?: RosterImportView | null;
 }
 export interface ConfirmedIdentity {
   studentNumber: string;

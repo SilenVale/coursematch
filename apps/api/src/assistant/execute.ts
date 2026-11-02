@@ -105,7 +105,7 @@ async function executeAddTopic(
       topic,
       configVersion: data?.configVersion ?? draft.configVersion,
     },
-    reply: `已添加 ${topic.instructor} · ${topic.courseName}。打开课程设置可看到两门课；要发布请说「发布」。`,
+    reply: `已添加 ${topic.instructor} · ${topic.courseName}。请继续配置（课程设置）核对两门课；要发布请说「发布」。`,
   };
 }
 
@@ -247,7 +247,7 @@ async function executeCreate(
       app,
       req,
       "PUT",
-      `/api/activities/${next.activityId}/participants?expectedConfigVersion=${next.configVersion}`,
+      `/api/activities/${next.activityId}/participants?expectedConfigVersion=${next.configVersion}&sourceLabel=${encodeURIComponent("选课助理")}`,
       next.rosterText,
       "text/csv; charset=utf-8",
     );
@@ -314,7 +314,7 @@ async function executeCreate(
 
   return {
     draft: next,
-    reply: `草稿已创建。可以打开课程设置核对同一场选课。要让学生填报，请说「发布」。`,
+    reply: `草稿已创建。请点击下方进入继续配置（课程设置），核对名单与题目后再发布。要让学生填报，请说「发布」。`,
     confirm: null,
   };
 }

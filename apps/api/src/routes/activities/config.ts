@@ -90,6 +90,9 @@ interface ActivityRow {
   lifecycle: Lifecycle;
   config_version: number;
   published_at: Date | null;
+  roster_source_label: string | null;
+  roster_imported_at: Date | null;
+  roster_csv_snapshot: string | null;
 }
 
 /**
@@ -164,6 +167,16 @@ function requireEditableLifecycle(row: ActivityRow, reply: FastifyReply): boolea
 }
 
 /** 与 read.ts 保持一致的视图映射（读接口由底座负责，这里只用于写接口回包）。 */
+function mapRosterImportFromRow(row: ActivityRow): ActivityView["rosterImport"] {
+  const csv = row.roster_csv_snapshot;
+  if (!csv?.trim()) return null;
+  return {
+    sourceLabel: row.roster_source_label?.trim() || "未记录来源",
+    importedAt: row.roster_imported_at?.toISOString() ?? new Date(0).toISOString(),
+    csvText: csv,
+  };
+}
+
 function toActivityView(row: ActivityRow): ActivityView {
   const now = new Date();
   let phase: ActivityView["phase"];
@@ -190,6 +203,7 @@ function toActivityView(row: ActivityRow): ActivityView {
     freezePreparation: "PENDING",
     resultPreparation: "PENDING",
     allowedActions: allowedActions(row),
+    rosterImport: mapRosterImportFromRow(row),
   };
 }
 
@@ -225,9 +239,9 @@ function validateDraftFields(input: Partial<ActivityDraftInput>): {
   if (input.title !== undefined) {
     const title = String(input.title).trim();
     if (title.length === 0) {
-      fieldErrors.push(fieldError("title", "REQUIRED", "活动名称不能为空"));
+      fieldErrors.push(fieldError("title", "REQUIRED", "课种名称不能为空"));
     } else if (title.length > 120) {
-      fieldErrors.push(fieldError("title", "TOO_LONG", "活动名称最多 120 个字符"));
+      fieldErrors.push(fieldError("title", "TOO_LONG", "课种名称最多 120 个字符"));
     } else {
       values.title = title;
     }
@@ -271,13 +285,27 @@ function validateDraftFields(input: Partial<ActivityDraftInput>): {
 interface RosterPayload {
   text: string;
   expectedConfigVersion: number | undefined;
+  sourceLabel: string;
+}
+
+function resolveRosterSourceLabel(
+  req: FastifyRequest,
+  query: { sourceLabel?: string },
+  fileName?: string,
+): string {
+  if (fileName?.trim()) return fileName.trim().slice(0, 200);
+  const fromQuery = query.sourceLabel?.trim();
+  if (fromQuery) return decodeURIComponent(fromQuery).slice(0, 200);
+  const header = req.headers["x-coursematch-roster-source"];
+  if (typeof header === "string" && header.trim()) return header.trim().slice(0, 200);
+  return "手工导入";
 }
 
 async function readRosterPayload(req: FastifyRequest): Promise<
   { ok: true; payload: RosterPayload } | { ok: false; status: number; body: unknown }
 > {
   const contentType = String(req.headers["content-type"] ?? "");
-  const query = (req.query ?? {}) as { expectedConfigVersion?: string };
+  const query = (req.query ?? {}) as { expectedConfigVersion?: string; sourceLabel?: string };
 
   // 通道 A：multipart/form-data（需要 @fastify/multipart，尚未加入依赖）
   if (contentType.includes("multipart/form-data")) {
@@ -290,7 +318,16 @@ async function readRosterPayload(req: FastifyRequest): Promise<
       return { ok: false, status, body };
     }
     const part = await (
-      req as unknown as { file: () => Promise<{ toBuffer: () => Promise<Buffer>; fields: Record<string, unknown> } | undefined> }
+      req as unknown as {
+        file: () => Promise<
+          | {
+              toBuffer: () => Promise<Buffer>;
+              fields: Record<string, unknown>;
+              filename?: string;
+            }
+          | undefined
+        >;
+      }
     ).file();
     if (!part) {
       const { status, body } = fail("INVALID_INPUT", "缺少文件字段 file", 400, {
@@ -312,6 +349,7 @@ async function readRosterPayload(req: FastifyRequest): Promise<
             : query.expectedConfigVersion !== undefined
               ? Number(query.expectedConfigVersion)
               : undefined,
+        sourceLabel: resolveRosterSourceLabel(req, query, part.filename),
       },
     };
   }
@@ -342,6 +380,7 @@ async function readRosterPayload(req: FastifyRequest): Promise<
         query.expectedConfigVersion !== undefined
           ? Number(query.expectedConfigVersion)
           : undefined,
+      sourceLabel: resolveRosterSourceLabel(req, query),
     },
   };
 }
@@ -801,9 +840,12 @@ export const activityConfigRoutes: FastifyPluginAsync = async (app) => {
         );
 
         const { rows: updated } = await client.query<{ config_version: number }>(
-          `UPDATE activity SET config_version = config_version + 1
+          `UPDATE activity SET config_version = config_version + 1,
+              roster_source_label = $2,
+              roster_imported_at = NOW(),
+              roster_csv_snapshot = $3
            WHERE id = $1 RETURNING config_version`,
-          [activity.id],
+          [activity.id, read.payload.sourceLabel, read.payload.text],
         );
 
         const { rows: countRows } = await client.query<{ count: string }>(

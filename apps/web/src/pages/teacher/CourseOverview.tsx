@@ -38,8 +38,8 @@ export function CourseOverview() {
         </Link>
       </p>
       <ol className="course-steps text-muted">
-        <li>课程设置：基本信息、名单 CSV、题目与名额</li>
-        <li>发布选课：学生在「志愿填报」中提交有序志愿</li>
+        <li>继续配置：课种、名单、开设的班</li>
+        <li>发布：学生在「志愿填报」中提交有序志愿</li>
         <li>截止后：分配结果 → 冻结快照 → 主分配 → 关闭</li>
       </ol>
     </div>
