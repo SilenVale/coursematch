@@ -113,7 +113,14 @@ export async function simulatePreferencesForActivity(
     }>(`SELECT *, now() AS db_now FROM activity WHERE id = $1 FOR UPDATE`, [activityId]);
     const act = actRows[0];
     if (!act) throw new Error("活动不存在");
-    const phase = derivePhase(act.lifecycle, act.start_at, act.deadline_at, act.db_now);
+    let phase = derivePhase(act.lifecycle, act.start_at, act.deadline_at, act.db_now);
+    if (phase === "DEADLINE_REACHED" && act.lifecycle === "PUBLISHED") {
+      await client.query(
+        `UPDATE activity SET deadline_at = NOW() + INTERVAL '7 days' WHERE id = $1`,
+        [activityId],
+      );
+      phase = "FILLING";
+    }
     if (phase !== "FILLING") {
       throw new Error("仅填报中阶段可模拟全员填报");
     }
@@ -185,7 +192,9 @@ export async function resetTrialForActivity(activityId: string): Promise<void> {
     await client.query(`DELETE FROM freeze_snapshot WHERE activity_id = $1`, [activityId]);
     await client.query(
       `UPDATE activity
-       SET lifecycle = 'PUBLISHED', freeze_last_failure = NULL
+       SET lifecycle = 'PUBLISHED',
+           freeze_last_failure = NULL,
+           deadline_at = NOW() + INTERVAL '7 days'
        WHERE id = $1 AND lifecycle IN ('PUBLISHED', 'ALLOCATED')`,
       [activityId],
     );

@@ -191,7 +191,8 @@ export function DevTrialPanel({
       {open && (
         <div className="dev-trial-body">
           <p className="text-muted" style={{ marginTop: 0 }}>
-            第 1 轮分配测试：模拟填报、清空、一键跑通冻结与主分配。正式环境请关闭{" "}
+            第 1 轮分配测试：模拟填报、清空、一键跑通冻结与主分配。已截止时
+            ①/③ 会自动把截止延至 7 天后（仅 Dev）。正式环境请关闭{" "}
             <code>ENABLE_DEV_TOOLS</code>。
           </p>
           {preview && (
