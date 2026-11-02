@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import type { TeacherResultsView } from "@coursematch/shared";
+import type {
+  EvidenceView,
+  OperationAction,
+  ParticipantView,
+  TeacherResultsView,
+  TeacherTopicView,
+} from "@coursematch/shared";
+import { listParticipants, listTopics, getActivity } from "./configApi";
 import {
   apiAllocate,
   apiClose,
@@ -10,16 +17,41 @@ import {
   apiTeacherResults,
 } from "./freezeApi";
 import { DevTrialPanel } from "./DevTrialPanel";
-import { getActivity } from "./configApi";
 
 type CourseOutlet = { activityId: string };
+
+const STATUS_LABEL: Record<string, string> = {
+  ASSIGNED: "已分配",
+  UNALLOCATED: "落选",
+  NOT_SUBMITTED: "未提交",
+};
+
+const ACTION_LABEL: Record<OperationAction, string> = {
+  CREATE_ACTIVITY: "创建活动",
+  UPDATE_ACTIVITY: "更新活动",
+  REPLACE_ROSTER: "替换名单",
+  CREATE_TOPIC: "创建班",
+  UPDATE_TOPIC: "更新班",
+  DELETE_TOPIC: "删除班",
+  PUBLISH_ACTIVITY: "发布",
+  SAVE_PREFERENCES: "保存志愿",
+  FREEZE_ACTIVITY: "冻结快照",
+  ALLOCATE_ACTIVITY: "主分配",
+  VOID_ACTIVITY: "作废",
+  CLOSE_ACTIVITY: "关闭",
+};
 
 export function FreezeAllocationPage() {
   const { activityId } = useOutletContext<CourseOutlet>();
   const [freezeState, setFreezeState] = useState<string>("—");
   const [results, setResults] = useState<TeacherResultsView | null>(null);
+  const [participants, setParticipants] = useState<ParticipantView[]>([]);
+  const [topics, setTopics] = useState<TeacherTopicView[]>([]);
+  const [evidence, setEvidence] = useState<EvidenceView | null>(null);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [evidenceBusy, setEvidenceBusy] = useState(false);
   const [activityTitle, setActivityTitle] = useState("");
 
   const refresh = useCallback(async () => {
@@ -48,6 +80,36 @@ export function FreezeAllocationPage() {
       .catch(() => setActivityTitle(""));
   }, [activityId]);
 
+  useEffect(() => {
+    if (!activityId || results?.preparation !== "READY") return;
+    Promise.all([listParticipants(activityId), listTopics(activityId)])
+      .then(([p, t]) => {
+        setParticipants(p.items);
+        setTopics(t.items as TeacherTopicView[]);
+      })
+      .catch(() => {
+        setParticipants([]);
+        setTopics([]);
+      });
+  }, [activityId, results?.preparation]);
+
+  const participantById = useMemo(() => {
+    const m = new Map<string, ParticipantView>();
+    for (const p of participants) m.set(p.participantId, p);
+    return m;
+  }, [participants]);
+
+  const topicTitleById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of topics) m.set(t.topicId, t.title);
+    return m;
+  }, [topics]);
+
+  const sortedRows = useMemo(() => {
+    if (results?.preparation !== "READY") return [];
+    return [...results.items].sort((a, b) => a.lotteryNumber - b.lotteryNumber);
+  }, [results]);
+
   async function run(action: () => Promise<void>) {
     setBusy(true);
     setError(null);
@@ -58,6 +120,21 @@ export function FreezeAllocationPage() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loadEvidence() {
+    if (!activityId) return;
+    setEvidenceBusy(true);
+    setError(null);
+    try {
+      const ev = await apiEvidence(activityId);
+      setEvidence(ev);
+      setEvidenceOpen(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setEvidenceBusy(false);
     }
   }
 
@@ -96,20 +173,10 @@ export function FreezeAllocationPage() {
         <button
           type="button"
           className="btn"
-          disabled={busy || !activityId}
-          onClick={() =>
-            run(async () => {
-              const ev = await apiEvidence(activityId!);
-              console.info("evidence", ev);
-              window.alert(
-                ev.snapshot
-                  ? `快照 ${ev.snapshot.id.slice(0, 8)}…，操作 ${ev.operations.length} 条（详情见控制台）`
-                  : "暂无快照",
-              );
-            })
-          }
+          disabled={busy || evidenceBusy || !activityId}
+          onClick={() => void loadEvidence()}
         >
-          查看证据
+          {evidenceBusy ? "加载证据…" : "查看证据"}
         </button>
         <button
           type="button"
@@ -127,6 +194,55 @@ export function FreezeAllocationPage() {
         </button>
       </div>
 
+      {evidenceOpen && evidence && (
+        <section className="evidence-panel" aria-labelledby="evidence-heading">
+          <div className="evidence-panel-head">
+            <h3 id="evidence-heading" className="section-title" style={{ margin: 0 }}>
+              操作证据
+            </h3>
+            <button type="button" className="btn btn-sm" onClick={() => setEvidenceOpen(false)}>
+              收起
+            </button>
+          </div>
+          <ul className="text-muted" style={{ margin: "8px 0", paddingLeft: 18 }}>
+            <li>
+              冻结快照：{" "}
+              {evidence.snapshot
+                ? `${evidence.snapshot.id}（${new Date(evidence.snapshot.frozenAt).toLocaleString("zh-CN")}）`
+                : "无"}
+            </li>
+            <li>
+              分配批次：{" "}
+              {evidence.batch
+                ? `${evidence.batch.id}（${new Date(evidence.batch.executedAt).toLocaleString("zh-CN")}）`
+                : "无"}
+            </li>
+          </ul>
+          {evidence.operations.length === 0 ? (
+            <p className="text-muted">暂无操作日志。</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>操作</th>
+                  <th>结果</th>
+                </tr>
+              </thead>
+              <tbody>
+                {evidence.operations.map((op) => (
+                  <tr key={op.id}>
+                    <td>{new Date(op.occurredAt).toLocaleString("zh-CN")}</td>
+                    <td>{ACTION_LABEL[op.action] ?? op.action}</td>
+                    <td>{op.outcome === "SUCCEEDED" ? "成功" : "失败"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
+
       {activityId && (
         <DevTrialPanel
           activityId={activityId}
@@ -138,28 +254,40 @@ export function FreezeAllocationPage() {
       {results?.preparation === "READY" && (
         <section style={{ marginTop: 20 }}>
           <h2 className="section-title">分配汇总</h2>
-          <p className="text-muted text-mono">
+          <p className="text-muted">
             已分配 {results.counts.assigned} · 落选 {results.counts.unallocated} · 未提交{" "}
             {results.counts.notSubmitted}
+          </p>
+          <p className="text-muted" style={{ fontSize: 13 }}>
+            下表按<strong>抽签序号</strong>排序（冻结时随机生成，数字越小越优先），不是学号顺序。同班竞争时，在容量范围内序号靠前者「已分配」，其余为「落选」。
           </p>
           <table className="data-table">
             <thead>
               <tr>
-                <th>参与者</th>
+                <th>学号</th>
+                <th>姓名</th>
                 <th>状态</th>
-                <th>题目</th>
-                <th>序号</th>
+                <th>班</th>
+                <th>抽签序号</th>
               </tr>
             </thead>
             <tbody>
-              {results.items.map((row) => (
-                <tr key={row.participantId}>
-                  <td className="text-mono">{row.participantId.slice(0, 8)}…</td>
-                  <td>{row.status}</td>
-                  <td className="text-mono">{row.topicId ?? "—"}</td>
-                  <td>{row.lotteryNumber}</td>
-                </tr>
-              ))}
+              {sortedRows.map((row) => {
+                const person = participantById.get(row.participantId);
+                const topicLabel =
+                  row.topicId != null
+                    ? (topicTitleById.get(row.topicId) ?? row.topicId.slice(0, 8) + "…")
+                    : "—";
+                return (
+                  <tr key={row.participantId}>
+                    <td>{person?.studentNumber ?? "—"}</td>
+                    <td>{person?.name ?? row.participantId.slice(0, 8) + "…"}</td>
+                    <td>{STATUS_LABEL[row.status] ?? row.status}</td>
+                    <td>{topicLabel}</td>
+                    <td>{row.lotteryNumber}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </section>
