@@ -226,6 +226,45 @@
   background: var(--secondary, #f7f7f8);
 }
 
+.cm-publish-success-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--primary, #2563eb) 25%, transparent);
+  background: color-mix(in oklab, var(--primary, #2563eb) 8%, var(--background, #fff));
+}
+
+.cm-publish-success-text {
+  margin: 0;
+  flex: 1;
+  min-width: 12rem;
+}
+
+.cm-publish-void-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1px solid var(--border-strong, #ccc);
+  border-radius: 999px;
+  background: var(--background, #fff);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cm-publish-void-btn:hover:not(:disabled) {
+  background: var(--secondary, #f7f7f8);
+}
+
+.cm-publish-void-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .cm-notice {
   background: #eaf6ec;
   border: 1px solid #b7dfc0;

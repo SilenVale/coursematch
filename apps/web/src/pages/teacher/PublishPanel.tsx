@@ -109,6 +109,10 @@ export function PublishPanel({
   const isTerminal = activity.lifecycle === "VOID" || activity.lifecycle === "CLOSED";
   const checklist = buildChecklist({ activity, participantCount, topicCount, topicPending });
   const blocking = checklist.filter((c) => c.state === "fail");
+  const publishedMessage = canVoid
+    ? notice ||
+      `发布成功。配置版本 v${activity.configVersion}，学生现在可以填报志愿。`
+    : null;
 
   async function handlePublish() {
     setBusy("publish");
@@ -116,7 +120,7 @@ export function PublishPanel({
     setNotice("");
     try {
       const next = await publishActivity(activity.activityId, activity.configVersion);
-      setNotice(`活动已发布，配置版本 v${next.configVersion}，学生现在可以填报志愿。`);
+      setNotice(`发布成功。配置版本 v${next.configVersion}，学生现在可以填报志愿。`);
       onPublished(next);
     } catch (err) {
       const apiError = toApiError(err);
@@ -158,7 +162,7 @@ export function PublishPanel({
       </header>
 
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
-      {notice && <p className="cm-notice">{notice}</p>}
+      {isDraft && notice && <p className="cm-notice">{notice}</p>}
 
       {/* 已作废/已关闭的活动不再展示齐备性清单：此时发布已无意义。 */}
       {!isTerminal && (
@@ -180,28 +184,38 @@ export function PublishPanel({
         </p>
       )}
 
-      <div className="cm-actions">
-        <button
-          type="button"
-          onClick={handlePublish}
-          disabled={!isDraft || busy !== null || blocking.length > 0}
-          title={
-            !isDraft
-              ? "只有草稿可以发布"
-              : blocking.length > 0
+      {canVoid && publishedMessage && (
+        <div className="cm-publish-success-bar">
+          <p className="cm-notice cm-publish-success-text">{publishedMessage}</p>
+          {!voidOpen && (
+            <button
+              type="button"
+              className="cm-publish-void-btn"
+              onClick={() => setVoidOpen(true)}
+              disabled={busy !== null}
+            >
+              作废活动
+            </button>
+          )}
+        </div>
+      )}
+
+      {isDraft && (
+        <div className="cm-actions">
+          <button
+            type="button"
+            onClick={handlePublish}
+            disabled={busy !== null || blocking.length > 0}
+            title={
+              blocking.length > 0
                 ? `还有 ${blocking.length} 项未通过：${blocking.map((b) => b.label).join("、")}`
                 : ""
-          }
-        >
-          {busy === "publish" ? "发布中…" : "发布活动"}
-        </button>
-
-        {canVoid && !voidOpen && (
-          <button type="button" onClick={() => setVoidOpen(true)} disabled={busy !== null}>
-            作废活动
+            }
+          >
+            {busy === "publish" ? "发布中…" : "发布"}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {voidOpen && (
         <div className="cm-void">
