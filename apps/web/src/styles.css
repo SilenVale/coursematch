@@ -598,6 +598,16 @@ a.btn:hover {
   margin-bottom: 8px;
 }
 
+.close-activity-hint {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  border-left: 3px solid var(--border);
+  background: var(--muted);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
 .input,
 .select {
   height: 32px;

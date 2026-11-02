@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import type {
   EvidenceView,
   OperationAction,
@@ -42,6 +42,7 @@ const ACTION_LABEL: Record<OperationAction, string> = {
 };
 
 export function FreezeAllocationPage() {
+  const navigate = useNavigate();
   const { activityId } = useOutletContext<CourseOutlet>();
   const [freezeState, setFreezeState] = useState<string>("—");
   const [results, setResults] = useState<TeacherResultsView | null>(null);
@@ -123,6 +124,25 @@ export function FreezeAllocationPage() {
     }
   }
 
+  async function handleCloseActivity() {
+    const reason = window.prompt(
+      "关闭活动 = 本轮选课正式结束并归档（只读）。\n需已完成主分配。填写关闭原因后返回工作台：",
+    );
+    if (reason === null) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (!reason.trim()) throw new Error("请填写关闭原因");
+      if (!activityId) return;
+      await apiClose(activityId, reason.trim());
+      navigate("/");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function loadEvidence() {
     if (!activityId) return;
     setEvidenceBusy(true);
@@ -145,6 +165,12 @@ export function FreezeAllocationPage() {
 
       <p className="text-muted">
         冻结状态：<span className="text-mono">{freezeState}</span>
+      </p>
+
+      <p className="text-muted close-activity-hint">
+        <strong>关闭活动</strong>：主分配完成后的<strong>正式收尾</strong>，不是作废、也不是清空联调。
+        关闭后本轮变为「已关闭」只读，结果与证据保留；填写原因后会<strong>返回工作台</strong>。
+        若还要再测一轮分配，请用下方 Dev「清空本轮联调」，不要点关闭。
       </p>
 
       {error && (
@@ -182,13 +208,7 @@ export function FreezeAllocationPage() {
           type="button"
           className="btn"
           disabled={busy || !activityId}
-          onClick={() =>
-            run(async () => {
-              const reason = window.prompt("关闭原因（必填）");
-              if (!reason?.trim()) throw new Error("已取消");
-              await apiClose(activityId!, reason.trim());
-            })
-          }
+          onClick={() => void handleCloseActivity()}
         >
           关闭活动
         </button>
